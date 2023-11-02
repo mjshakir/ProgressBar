@@ -1,0 +1,8 @@
+# ninja log v5
+3	752	1698874315002766552	CMakeFiles/ProgressBar_example.dir/example/main.cpp.o	be0bf6a75709d773
+0	1424	1698874250679342033	CMakeFiles/ProgressBar.dir/src/CircularBuffer.cpp.o	206156b557ab772
+2	4129	1698874318382735138	CMakeFiles/ProgressBar.dir/src/ProgressBar.cpp.o	5fa540f26b7443a6
+1	2826	1698874252083329946	test/CMakeFiles/ProgressBar_tests.dir/CircularBufferTest.cpp.o	6c57cadd42798907
+4130	4192	1698874318442734581	lib/libProgressBar.so	568aeb847fe7d322
+4193	4266	1698874318514733910	bin/ProgressBar_example	d53561cd7096f692
+4193	4307	1698874318558733500	bin/ProgressBar_tests	2faf30dffe26cb37
