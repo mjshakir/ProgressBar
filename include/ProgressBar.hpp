@@ -145,7 +145,7 @@ namespace ProgressBar{
              * @endcode
              *
              * @note In cases where the total count is `std::numeric_limits<size_t>::max()`,
-             * `is_done()` will always return false unless manually checked against a condition.
+             * `done()` will always return false unless manually checked against a condition.
              */
             bool done(void);
             //--------------------------------------------------------------
