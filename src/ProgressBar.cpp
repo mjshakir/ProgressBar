@@ -66,7 +66,6 @@
 // ANSI Cursor Up
 //--------------------------
 #define ANSI_CURSOR_UP_ONE_LINE         "\033[1A"
-#define ANSI_CURSOR_UP_TWO_LINES        "\033[2A"
 //--------------------------
 // ANSI Clear Line
 //--------------------------
@@ -133,7 +132,7 @@ bool ProgressBar::ProgressBar::done(void){
     //--------------------------
     return is_done();
     //--------------------------
-}// end constexpr bool ProgressBar::ProgressBar::done(void)
+}// end bool ProgressBar::ProgressBar::done(void)
 //--------------------------------------------------------------
 void ProgressBar::ProgressBar::initializer(const std::string& name) const{
     //--------------------------
@@ -143,7 +142,7 @@ void ProgressBar::ProgressBar::initializer(const std::string& name) const{
     //--------------------------
     std::signal(SIGWINCH, handle_winch_signal);
     //--------------------------
-}// end void ProgressBar::ProgressBar::initializer(void)
+}// end void ProgressBar::ProgressBar::initializer(const std::string& name) const
 //--------------------------------------------------------------
 std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
     //--------------------------
