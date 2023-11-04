@@ -17,7 +17,18 @@ int main(void) {
         }
     }
 
-    // Example 2: Testing different characters for progress and empty space
+    // Example 2: Basic usage with a predefined total using while
+    {
+        constexpr size_t total = 100;
+        ProgressBar::ProgressBar bar(total, "Example quick constant time test using while", "#", "-");
+
+        while(!bar.done()){
+            std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Simulate work
+            bar.update(); // Update the progress bar
+        }// end while(!bar.done())
+    }
+
+    // Example 3: Testing different characters for progress and empty space
     {
         constexpr size_t total = 500;
         ProgressBar::ProgressBar bar(total, "Example long constant time test", "=", " ");
@@ -28,7 +39,7 @@ int main(void) {
         }
     }
 
-    // Example 3: Dynamic update time test
+    // Example 4: Dynamic update time test
     {
         constexpr size_t total = 500;
         ProgressBar::ProgressBar bar(total, "Example adding time test", "-", "-");
@@ -39,7 +50,7 @@ int main(void) {
         }
     }
 
-    // Example 4: Infinite progress bar (without predefined total)
+    // Example 5: Infinite progress bar (without predefined total)
     {
         ProgressBar::ProgressBar bar("Example without total", "#", "-");
 
@@ -64,6 +75,14 @@ int main(void) {
         for (size_t i = 0; i <= 100; ++i) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
+    }
+    {
+        constexpr size_t total = 100;
+        size_t i = 0;
+        while(i < total){
+            std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Simulate work
+            ++i;
+        }// end while(!bar.done())
     }
     {
         constexpr size_t total = 500;
