@@ -32,7 +32,7 @@ sudo apt-get update; sudo apt-get install libfmt-dev libtbb-dev libboost-all-dev
 ### Cloning the Repository
 First, clone the MyProgressBar repository using git:
 ```sh
-git clone https://github.com/your-username/MyProgressBar.git
+git clone https://github.com/mjshakir/ProgressBar.git
 ```
 
 ### Building the Project
