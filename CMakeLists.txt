@@ -65,9 +65,11 @@ endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES
     PUBLIC_HEADER "include/ProgressBar.hpp;include/CircularBuffer.hpp")
 
-# Add an executable for the example
-add_executable(${PROJECT_NAME}_example example/main.cpp)
-target_link_libraries(${PROJECT_NAME}_example PRIVATE ${PROJECT_NAME})
+# Check if this is the main project or if it is being included through add_subdirectory
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    add_executable(${PROJECT_NAME}_example example/main.cpp)
+    target_link_libraries(${PROJECT_NAME}_example PRIVATE ${PROJECT_NAME})
+endif()
 
 # Compiler and Linker Options for different build types
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
