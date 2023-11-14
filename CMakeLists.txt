@@ -171,8 +171,8 @@ endif()
 
 # Set THREADPOOL_LIBRARIES variable
 if(PROGRESSBAR_STANDALONE_PROJECT)
-    set(PROGRESSBAR_LIBRARIES ThreadPool::threadpool)
+    set(PROGRESSBAR_LIBRARIES ProgressBar::progressbar)
 else()
-    set(PROGRESSBAR_LIBRARIES ThreadPool::threadpool PARENT_SCOPE)
+    set(PROGRESSBAR_LIBRARIES ProgressBar::progressbar PARENT_SCOPE)
 endif()
 message(STATUS "THREADPOOL_LIBRARIES: ${PROGRESSBAR_LIBRARIES}")
