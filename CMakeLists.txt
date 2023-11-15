@@ -123,14 +123,20 @@ if(MSVC)
         target_link_options(${PROJECT_NAME} PRIVATE /DEBUG)
     endif()
 else()
+    # For non-MSVC compilers
     target_compile_options(${PROJECT_NAME} PRIVATE 
-        "$<$<CONFIG:Release>:-O3>" 
-        "$<$<CONFIG:Debug>:-g>" 
-        "$<$<CONFIG:Debug>:-O0>"
+        "$<$<CONFIG:Release>:-O3>"
     )
-    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|GNU")
-        target_compile_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:Debug>:-fsanitize=address>")
-        target_link_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:Debug>:-fsanitize=address>")
+    
+    # Conditionally include AddressSanitizer flags only if standalone and in Debug mode
+    if(PROGRESSBAR_STANDALONE_PROJECT AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|GNU")
+        set(SANITIZE_FLAGS "$<$<CONFIG:Debug>:-fsanitize=address>")
+        target_compile_options(${PROJECT_NAME} PRIVATE 
+            "$<$<CONFIG:Debug>:-g>"
+            "$<$<CONFIG:Debug>:-O0>"
+            ${SANITIZE_FLAGS}
+        )
+        target_link_options(${PROJECT_NAME} PRIVATE ${SANITIZE_FLAGS})
     endif()
 endif()
 
@@ -178,4 +184,3 @@ if(PROGRESSBAR_STANDALONE_PROJECT)
 else()
     set(PROGRESSBAR_LIBRARIES ProgressBar::progressbar PARENT_SCOPE)
 endif()
-message(STATUS "THREADPOOL_LIBRARIES: ${PROGRESSBAR_LIBRARIES}")
