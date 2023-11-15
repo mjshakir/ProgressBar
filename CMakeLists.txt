@@ -111,25 +111,28 @@ if(PROGRESSBAR_BUILD_EXAMPLE)
 endif()
 
 # Compiler and Linker Options for different build types
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    if (MSVC)
-        target_compile_options(${PROJECT_NAME} PRIVATE /O2)
-    else()
-        target_compile_options(${PROJECT_NAME} PRIVATE -O3)
-    endif()
-elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    if (MSVC)
-        target_compile_options(${PROJECT_NAME} PRIVATE /Zi /Od)
+if(MSVC)
+    set(CMAKE_CXX_FLAGS_RELEASE "/O2 /MD")
+    set(CMAKE_CXX_FLAGS_DEBUG "/Od /MDd")
+    target_compile_options(${PROJECT_NAME} PRIVATE 
+        "$<$<CONFIG:Release>:/O2>" 
+        "$<$<CONFIG:Debug>:/Od>" 
+        "$<$<CONFIG:Debug>:/Zi>"
+    )
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         target_link_options(${PROJECT_NAME} PRIVATE /DEBUG)
-    else()
-        target_compile_options(${PROJECT_NAME} PRIVATE -g -O0)
-        if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|GNU")
-            target_compile_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
-            target_link_options(${PROJECT_NAME} PRIVATE -fsanitize=address)
-        endif()
+    endif()
+else()
+    target_compile_options(${PROJECT_NAME} PRIVATE 
+        "$<$<CONFIG:Release>:-O3>" 
+        "$<$<CONFIG:Debug>:-g>" 
+        "$<$<CONFIG:Debug>:-O0>"
+    )
+    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|GNU")
+        target_compile_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:Debug>:-fsanitize=address>")
+        target_link_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:Debug>:-fsanitize=address>")
     endif()
 endif()
-
 
 # Installation and export setup
 if(PROGRESSBAR_STANDALONE_PROJECT)
