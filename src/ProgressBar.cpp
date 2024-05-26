@@ -162,10 +162,10 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
     //--------------------------
     static uint8_t m_update_counter = 0;
     //--------------------------
-    static std::chrono::steady_clock::time_point m_last_tick_time = std::chrono::steady_clock::now();
+    static auto m_last_tick_time = m_start_time;
     //--------------------------
     auto now = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_start_time).count();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_start_time).count();
     //--------------------------
     // Calculating overall ETA based on the overall progress and time
     //--------------------------
@@ -232,7 +232,7 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void)
 //--------------------------------------------------------------
 #ifndef HAVE_FMT
     //--------------------------
-    void ProgressBar::ProgressBar::append_time(std::stringstream& ss, const std::chrono::milliseconds::rep& time, const std::string& label) {
+    void ProgressBar::ProgressBar::append_time(std::ostringstream& ss, const std::chrono::milliseconds::rep& time, const std::string& label) {
         //--------------------------
         // Convert total milliseconds to chrono::milliseconds type
         //--------------------------
@@ -357,9 +357,9 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void)
 //--------------------------
     void ProgressBar::ProgressBar::display(void) {
         //--------------------------
-        std::stringstream ss;
-        ss.str().reserve(200);
-        size_t position = 0;
+        std::ostringstream ss;
+        ss.str().reserve(200);  // Reserve memory to avoid dynamic allocation during the process
+        size_t position = 0UL;
         //--------------------------
         ss << '\r';
         //--------------------------
@@ -423,13 +423,13 @@ void ProgressBar::ProgressBar::tick(void) {
     //--------------------------
 }// end void ProgressBar::ProgressBar::tick(void)
 //--------------------------------------------------------------
-bool ProgressBar::ProgressBar::is_done(void) const{
+inline bool ProgressBar::ProgressBar::is_done(void) const{
     //--------------------------
     return m_progress >= m_total;
     //--------------------------
 }// end bool ProgressBar::ProgressBar::is_done(void)
 //--------------------------------------------------------------
-size_t ProgressBar::ProgressBar::get_terminal_width(void) {
+inline size_t ProgressBar::ProgressBar::get_terminal_width(void) {
     //--------------------------
     struct winsize size;
     //--------------------------
@@ -470,7 +470,7 @@ void ProgressBar::ProgressBar::calculate_bar(void) {
     //--------------------------
 }// end void ProgressBar::ProgressBar::calculate_bar(void)
 //--------------------------------------------------------------
-void ProgressBar::ProgressBar::clear_lines(bool line){
+inline void ProgressBar::ProgressBar::clear_lines(bool line){
     //--------------------------
     if(line){
 #ifdef HAVE_FMT
