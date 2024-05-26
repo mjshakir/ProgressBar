@@ -77,23 +77,25 @@ constexpr uint32_t SECONDS_PER_DAY      = 86400U;
 //--------------------------
 // Boost Constant
 //--------------------------
-#define CIRCULAR_BUFFER                 10
+constexpr size_t CIRCULAR_BUFFER        = 10UL;
 //--------------------------
 // Interval Constant
 //--------------------------
-#define UPDATE_INTERVAL                 5
+constexpr uint8_t UPDATE_INTERVAL       = 5U;
 //--------------------------
 // Bar Constant
 //--------------------------
-#define BAR_PERCENTAGE                  0.15
-#define DEFAULT_WIDTH                   30
-#define MIN_WIDTH                       10
-constexpr size_t MIN_BAR_LENGTH =       15;       // Minimum length of the progress bar for visibility.
+constexpr float BAR_PERCENTAGE          = 0.15f;
+constexpr size_t DEFAULT_WIDTH          = 30UL;
+#ifdef HAVE_FMT
+    constexpr size_t MIN_WIDTH              = 10UL;
+#endif
+constexpr size_t MIN_BAR_LENGTH         = 15UL;       // Minimum length of the progress bar for visibility.
 //--------------------------------------------------------------
-size_t ProgressBar::ProgressBar::m_available_width = 0;
-size_t ProgressBar::ProgressBar::m_name_length = 0;
+size_t ProgressBar::ProgressBar::m_available_width  = 0;
+size_t ProgressBar::ProgressBar::m_name_length      = 0;
 size_t ProgressBar::ProgressBar::m_spaces_after_bar = 0;
-size_t ProgressBar::ProgressBar::m_bar_length = 0;
+size_t ProgressBar::ProgressBar::m_bar_length       = 0;
 //--------------------------------------------------------------
 ProgressBar::ProgressBar::ProgressBar(  const std::string& name, 
                                         const std::string& progress_char, 
@@ -153,7 +155,7 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
 #ifdef USE_BOOST
     static boost::circular_buffer<std::chrono::milliseconds::rep> m_delta_times(m_total > 2*CIRCULAR_BUFFER ? CIRCULAR_BUFFER : static_cast<size_t>(m_total/2));
 #else
-    static CircularBuffer<std::chrono::milliseconds::rep> m_delta_times( m_total > 2*CIRCULAR_BUFFER ? CIRCULAR_BUFFER : static_cast<size_t>(m_total/2));
+    static CircularBuffer::CircularBuffer<std::chrono::milliseconds::rep> m_delta_times( m_total > 2*CIRCULAR_BUFFER ? CIRCULAR_BUFFER : static_cast<size_t>(m_total/2));
 #endif
     //--------------------------
     static auto m_last_etc = std::numeric_limits<double>::max();
@@ -197,25 +199,27 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
     #endif
 #else
         m_delta_times.push(std::move(elapsed_since_last));
-        auto recent_avg_time = m_delta_times.mean().value();
+        auto recent_avg_time = m_delta_times.mean().value_or(0);
 #endif
         //--------------------------
         // Use the recent average to estimate current ETC
         //--------------------------
-        auto recent_etc = recent_avg_time * (m_total - m_progress) / m_progress;
+        auto recent_etc     = recent_avg_time * (static_cast<double>(m_total) - static_cast<double>(m_progress)) / static_cast<double>(m_progress);
         //--------------------------
         // Average of overall and recent ETC
         //--------------------------
-        auto combined_etc = (overall_etc + recent_etc) / 2; // Averaging ETCs
+        auto combined_etc   = (static_cast<double>(overall_etc) + recent_etc) / 2.; // Averaging ETCs
         //--------------------------
-        m_last_tick_time = now; // Update the last tick time
-        m_last_etc = combined_etc; // Store the calculated ETC
-        m_update_counter = 0; // Reset the counter after updating
+        m_last_tick_time    = now;          // Update the last tick time
+        m_last_etc          = combined_etc; // Store the calculated ETC
+        m_update_counter    = 0;            // Reset the counter after updating
         //--------------------------
         return combined_etc; // Return combined ETC in milliseconds
+        //--------------------------
     }// end if (++m_update_counter % UPDATE_INTERVAL == 0)
     //--------------------------
     // If not the time to update, return the last calculated ETC
+    //--------------------------
     return m_last_etc; // ETC in milliseconds
     //--------------------------
 }// end double ProgressBar::ProgressBar::calculate_etc(void) 
