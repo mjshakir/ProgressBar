@@ -39,20 +39,18 @@ if(${FORCE_COLORED_OUTPUT})
 endif()
 
 # Compiler options
-add_compile_options(-Wall -Wextra -Wpedantic)
+add_compile_options(-Wall -Wextra -Wpedantic -pedantic-errors -Werror=format-security -fasynchronous-unwind-tables)
 
 # Find required packages
 find_package(fmt QUIET)
-find_package(TBB QUIET)
+# find_package(TBB QUIET)
 find_package(Boost QUIET)
 
-# Create the library
-# file(GLOB SOURCES "src/*.cpp")
-set(SOURCES src/ProgressBar.cpp)
-if(NOT Boost_FOUND)
-    list(APPEND SOURCES src/CircularBuffer.cpp)
-endif()
+# Add external submodule projects
+add_subdirectory(external_libraries/CircularBuffer)
 
+# Create the library
+set(SOURCES src/ProgressBar.cpp)
 
 if(BUILD_PROGRESSBAR_SHARED_LIBS)
     add_library(${PROJECT_NAME} SHARED ${SOURCES})
@@ -61,7 +59,6 @@ else()
 endif()
 
 add_library(ProgressBar::progressbar ALIAS ${PROJECT_NAME})
-
 
 # Specify properties and requirements for the library
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -95,9 +92,12 @@ else()
     message(STATUS "Boost not found")
 endif()
 
+# Link CircularBuffer
+target_link_libraries(${PROJECT_NAME} PRIVATE CircularBuffer::CircularBuffer)
+
 # Specify the public headers for the library
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    PUBLIC_HEADER "include/ProgressBar.hpp;include/CircularBuffer.hpp")
+    PUBLIC_HEADER "include/ProgressBar.hpp")
 
 # Only build the example and tests if this is the main project
 if(PROGRESSBAR_BUILD_TESTS)
@@ -110,7 +110,7 @@ if(PROGRESSBAR_BUILD_EXAMPLE)
     target_link_libraries(${PROJECT_NAME}_example PRIVATE ${PROJECT_NAME})
 endif()
 
-# Compiler and Linker Options for different build types
+# Compiler and Linker Options for different build types and platforms
 if(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "/O2 /MD")
     set(CMAKE_CXX_FLAGS_DEBUG "/Od /MDd")
@@ -143,7 +143,7 @@ endif()
 # Installation and export setup
 if(PROGRESSBAR_STANDALONE_PROJECT)
     include(GNUInstallDirs)
-    install(TARGETS ${PROJECT_NAME}
+    install(TARGETS ${PROJECT_NAME} CircularBuffer
         EXPORT ${PROJECT_NAME}Targets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -178,7 +178,7 @@ if(PROGRESSBAR_STANDALONE_PROJECT)
     )
 endif()
 
-# Set THREADPOOL_LIBRARIES variable
+# Set PROGRESSBAR variable
 if(PROGRESSBAR_STANDALONE_PROJECT)
     set(PROGRESSBAR_LIBRARIES ProgressBar::progressbar)
 else()
