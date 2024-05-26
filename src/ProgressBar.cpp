@@ -88,7 +88,7 @@ constexpr uint8_t UPDATE_INTERVAL       = 5U;
 constexpr float BAR_PERCENTAGE          = 0.15f;
 constexpr size_t DEFAULT_WIDTH          = 30UL;
 #ifdef HAVE_FMT
-    constexpr size_t MIN_WIDTH              = 10UL;
+    constexpr size_t MIN_WIDTH          = 10UL;
 #endif
 constexpr size_t MIN_BAR_LENGTH         = 15UL;       // Minimum length of the progress bar for visibility.
 //--------------------------------------------------------------
@@ -199,7 +199,7 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
     #endif
 #else
         m_delta_times.push(std::move(elapsed_since_last));
-        auto recent_avg_time = m_delta_times.mean().value_or(0);
+        auto recent_avg_time = m_delta_times.mean().value_or(0.);
 #endif
         //--------------------------
         // Use the recent average to estimate current ETC
@@ -212,7 +212,7 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
         //--------------------------
         m_last_tick_time    = now;          // Update the last tick time
         m_last_etc          = combined_etc; // Store the calculated ETC
-        m_update_counter    = 0;            // Reset the counter after updating
+        m_update_counter    = 0U;            // Reset the counter after updating
         //--------------------------
         return combined_etc; // Return combined ETC in milliseconds
         //--------------------------
