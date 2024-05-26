@@ -160,7 +160,7 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
     //--------------------------
     static auto m_last_etc = std::numeric_limits<double>::max();
     //--------------------------
-    static uint8_t m_update_counter = 0;
+    static uint8_t m_update_counter = 0U;
     //--------------------------
     static auto m_last_tick_time = m_start_time;
     //--------------------------
@@ -199,16 +199,16 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
     #endif
 #else
         m_delta_times.push(std::move(elapsed_since_last));
-        auto recent_avg_time = m_delta_times.mean().value_or(0.);
+        const double recent_avg_time = m_delta_times.mean().value_or(0.);
 #endif
         //--------------------------
         // Use the recent average to estimate current ETC
         //--------------------------
-        auto recent_etc     = recent_avg_time * (static_cast<double>(m_total) - static_cast<double>(m_progress)) / static_cast<double>(m_progress);
+        const double recent_etc     = recent_avg_time * (static_cast<double>(m_total) - static_cast<double>(m_progress)) / static_cast<double>(m_progress);
         //--------------------------
         // Average of overall and recent ETC
         //--------------------------
-        auto combined_etc   = (static_cast<double>(overall_etc) + recent_etc) / 2.; // Averaging ETCs
+        double combined_etc   = (static_cast<double>(overall_etc) + recent_etc) / 2.; // Averaging ETCs
         //--------------------------
         m_last_tick_time    = now;          // Update the last tick time
         m_last_etc          = combined_etc; // Store the calculated ETC
@@ -313,13 +313,13 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void)
     //--------------------------
     void ProgressBar::ProgressBar::display(void) {
         //--------------------------
-        size_t position = 0, percent = 0;
+        size_t position = 0UL, percent = 0UL;
         //--------------------------
-        if (m_total != 0 and m_total != std::numeric_limits<size_t>::max()) {
-            m_progress = std::clamp(m_progress, static_cast<size_t>(0), m_total);
-            auto ratio = m_total > 0 ? static_cast<double>(m_progress) / m_total : 0;
-            percent = static_cast<size_t>(ratio * 100);
-            position = static_cast<size_t>(m_bar_length * ratio);
+        if (m_total != 0UL and m_total != std::numeric_limits<size_t>::max()) {
+            m_progress          = std::clamp(m_progress, static_cast<size_t>(0UL), m_total);
+            const double ratio  = m_total > 0UL ? static_cast<double>(m_progress) / static_cast<double>(m_total) : 0.;
+            percent             = static_cast<size_t>(ratio * 100UL);
+            position            = static_cast<size_t>(m_bar_length * ratio);
         } else {
             position = m_progress % m_bar_length;
         }// end if (m_total != 0 and m_total != std::numeric_limits<size_t>::max())
@@ -363,13 +363,13 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void)
         //--------------------------
         ss << '\r';
         //--------------------------
-        if(m_total != 0 and m_total != std::numeric_limits<size_t>::max()) {
+        if(m_total != 0UL and m_total != std::numeric_limits<size_t>::max()) {
             //--------------------------
-            m_progress = std::clamp(m_progress, static_cast<size_t>(0), m_total);
+            m_progress = std::clamp(m_progress, static_cast<size_t>(0UL), m_total);
             //--------------------------
-            double ratio = m_total > 0 ? static_cast<double>(m_progress) / m_total : 0;
-            auto percent = static_cast<size_t>(ratio * 100);
-            position = m_bar_length * ratio;
+            const double ratio  = m_total > 0UL ? static_cast<double>(m_progress) / static_cast<double>(m_total) : 0.;
+            const size_t percent        = static_cast<size_t>(ratio * 100UL);
+            position            = m_bar_length * ratio;
             //--------------------------
             ss << m_name << ": " << std::setw(3) << percent << "% [" << ANSI_BOLD_ON;
             //--------------------------
@@ -397,7 +397,7 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void)
         //--------------------------
         append_time(ss, calculate_elapsed(), "Elapsed:");
         //--------------------------
-        if(m_total != 0 and m_total != std::numeric_limits<size_t>::max()) {
+        if(m_total != 0UL and m_total != std::numeric_limits<size_t>::max()) {
             //--------------------------
             append_time(ss, calculate_etc(), "ETC:");
             //--------------------------
@@ -450,11 +450,11 @@ void ProgressBar::ProgressBar::calculate_bar(void) {
     //--------------------------
     // Constants for fixed characters and escape sequences.
     //--------------------------
-    constexpr size_t fixed_characters = 10;  // "100% []" and any padding.
-    constexpr size_t ansi_sequences = 14;    // "\033[1m", "\033[32m", etc.
+    static constexpr size_t fixed_characters   = 10UL;  // "100% []" and any padding.
+    static constexpr size_t ansi_sequences     = 14UL;    // "\033[1m", "\033[32m", etc.
     //--------------------------
-    size_t fixed_and_name_characters = m_name_length + fixed_characters;
-    m_available_width = terminal_width - fixed_and_name_characters - ansi_sequences;
+    const size_t fixed_and_name_characters  = m_name_length + fixed_characters;
+    m_available_width                       = terminal_width - fixed_and_name_characters - ansi_sequences;
     //--------------------------
     // Calculate the length of the bar based on BAR_PERCENTAGE.
     //--------------------------
