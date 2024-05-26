@@ -72,7 +72,8 @@
         "valarray": "cpp",
         "variant": "cpp",
         "any": "cpp",
-        "span": "cpp"
+        "span": "cpp",
+        "__split_buffer": "cpp"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/clang"
 }
