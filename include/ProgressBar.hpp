@@ -181,7 +181,8 @@ namespace ProgressBar{
             //--------------------------------------------------------------
         private:
             //--------------------------------------------------------------
-            size_t m_total, m_progress;
+            const size_t m_total;
+            size_t m_progress;
             //--------------------------
             const std::string m_name, m_progress_char, m_empty_space_char;
             //--------------------------
