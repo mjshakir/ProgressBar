@@ -155,7 +155,7 @@ namespace ProgressBar{
             //--------------------------
             #ifndef HAVE_FMT
                 //--------------------------
-                void append_time(std::stringstream& ss, const std::chrono::milliseconds::rep& time, const std::string& label);
+                void append_time(std::ostringstream& ss, const std::chrono::milliseconds::rep& time, const std::string& label);
                 //--------------------------
             #endif
             //--------------------------
@@ -169,13 +169,13 @@ namespace ProgressBar{
             //--------------------------
             void tick(void);
             //--------------------------
-            bool is_done(void) const ;
+            inline bool is_done(void) const ;
             //--------------------------
             std::chrono::milliseconds::rep calculate_etc(void);
             //--------------------------
             std::chrono::milliseconds::rep calculate_elapsed(void);
             //--------------------------
-            static size_t get_terminal_width(void);
+            static inline size_t get_terminal_width(void);
             //--------------------------
             static void calculate_bar(void); 
             //--------------------------------------------------------------
@@ -190,7 +190,7 @@ namespace ProgressBar{
             //--------------------------
             static size_t m_name_length, m_bar_length, m_available_width, m_spaces_after_bar;
             //--------------------------
-            static void clear_lines(bool line = false);
+            static inline void clear_lines(bool line = false);
             //--------------------------
             static void handle_winch_signal(int signum);
         //--------------------------------------------------------------
