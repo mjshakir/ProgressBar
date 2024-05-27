@@ -26,6 +26,9 @@ endif()
 # Build options
 option(BUILD_PROGRESSBAR_SHARED_LIBS "Build using shared libraries" ON)
 option(PROGRESSBAR_BUILD_EXAMPLE "Build the ProgressBar example application" ${PROGRESSBAR_STANDALONE_PROJECT})
+option(WITH_FMT "Include fmt library" ON)
+option(WITH_TBB "Include TBB library" ON)
+option(WITH_BOOST "Include Boost library" ON)
 
 # Force colored output for better diagnostics
 option(FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." OFF)
@@ -46,13 +49,12 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic -pedantic-errors -Werror=format-security -fasynchronous-unwind-tables)
 endif()
 
-# Find required packages
-find_package(fmt QUIET)
-find_package(TBB QUIET)
-find_package(Boost QUIET)
-
 # Add external submodule projects
-add_subdirectory(external_libraries/CircularBuffer)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external_libraries/CircularBuffer)
+    add_subdirectory(external_libraries/CircularBuffer)
+else()
+    message(FATAL_ERROR "external_libraries/CircularBuffer directory not found")
+endif()
 
 # Create the library
 set(SOURCES src/ProgressBar.cpp)
@@ -72,33 +74,43 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 
 # Link dependencies
-if(fmt_FOUND)
-    target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_FMT)
-    message(STATUS "Found fmt")
-else()
-    message(STATUS "fmt not found")
+if(WITH_FMT)
+    find_package(fmt QUIET)
+    if(fmt_FOUND)
+        target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_FMT)
+    else()
+        message(STATUS "fmt not found or disabled")
+    endif()
 endif()
 
-if(TBB_FOUND)
-    target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_TBB)
-    message(STATUS "Found TBB")
-else()
-    message(STATUS "TBB not found")
+if(WITH_TBB)
+    find_package(TBB QUIET)
+    if(TBB_FOUND)
+        target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_TBB)
+    else()
+        message(STATUS "TBB not found or disabled")
+    endif()
 endif()
 
-if(Boost_FOUND)
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${Boost_LIBRARIES})
-    target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
-    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOOST)
-    message(STATUS "Found Boost")
-else()
-    message(STATUS "Boost not found")
+if(WITH_BOOST)
+    find_package(Boost QUIET)
+    if(Boost_FOUND)
+        target_link_libraries(${PROJECT_NAME} PUBLIC ${Boost_LIBRARIES})
+        target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
+        target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOOST)
+    else()
+        message(STATUS "Boost not found or disabled")
+    endif()
 endif()
 
 # Link CircularBuffer
-target_link_libraries(${PROJECT_NAME} PRIVATE CircularBuffer::CircularBuffer)
+if(TARGET CircularBuffer::CircularBuffer)
+    target_link_libraries(${PROJECT_NAME} PRIVATE CircularBuffer::CircularBuffer)
+else()
+    message(FATAL_ERROR "CircularBuffer target not found")
+endif()
 
 # Specify the public headers for the library
 set_target_properties(${PROJECT_NAME} PROPERTIES
