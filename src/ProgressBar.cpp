@@ -324,15 +324,15 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void)
             position = m_progress % m_bar_length;
         }// end if (m_total != 0 and m_total != std::numeric_limits<size_t>::max())
         //--------------------------
-        std::string completed_bar(position, m_progress_char[0]); // Constructs a string of 'position' count of progress chars.
-        std::string incomplete_bar(m_bar_length - position, m_empty_space_char[0]); // Remaining part.
+        const std::string completed_bar(position, m_progress_char[0]);                      // Constructs a string of 'position' count of progress chars.
+        const std::string incomplete_bar(m_bar_length - position, m_empty_space_char[0]);   // Remaining part.
         //--------------------------
-        std::string elapsed_time    = append_time(calculate_elapsed(), "Elapsed:");
-        std::string etc_time        = (m_total != 0UL and m_total != std::numeric_limits<size_t>::max()) ? append_time(calculate_etc(), "ETC:") : "ETC: N/A ";
+        const std::string elapsed_time    = append_time(calculate_elapsed(), "Elapsed:");
+        const std::string etc_time        = (m_total != 0UL and m_total != std::numeric_limits<size_t>::max()) ? append_time(calculate_etc(), "ETC:") : "ETC: N/A ";
         //--------------------------
         // Format the progress bar with colors.
-        std::string green_part  = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{}", completed_bar);
-        std::string red_part    = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::red), "{}", incomplete_bar);
+        const std::string green_part  = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{}", completed_bar);
+        const std::string red_part    = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::red), "{}", incomplete_bar);
         //--------------------------
         std::string colored_bar;
         colored_bar.reserve(green_part.size() + red_part.size() + 1UL);  // +1 for the "]" character
@@ -344,7 +344,7 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void)
             formatted_bar = fmt::format("\r{:3d}% [{}]", percent, completed_bar + incomplete_bar);
         }// end if (m_available_width < MIN_WIDTH)
         //--------------------------
-        std::string formatted_time = fmt::format("{} {}", elapsed_time, etc_time);
+        const std::string formatted_time = fmt::format("{} {}", elapsed_time, etc_time);
         //--------------------------
         // Use bold emphasis for printing.
         //--------------------------
