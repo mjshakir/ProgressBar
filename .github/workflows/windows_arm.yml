@@ -8,6 +8,47 @@ jobs:
       fail-fast: false
       matrix:
         arch: [arm]
+        include:
+          - config: "default"
+            dependencies: |
+              boost:arm64-windows
+              gtest:arm64-windows
+              tbb:arm64-windows
+              ftm:arm64-windows
+            cmake_opts: ""
+          - config: "no_fmt"
+            dependencies: |
+              boost:arm64-windows
+              gtest:arm64-windows
+              tbb:arm64-windows
+            cmake_opts: "-DWITH_FMT=OFF"
+          - config: "no_tbb"
+            dependencies: |
+              boost:arm64-windows
+              gtest:arm64-windows
+              ftm:arm64-windows
+            cmake_opts: "-DWITH_TBB=OFF"
+          - config: "no_boost"
+            dependencies: |
+              gtest:arm64-windows
+              tbb:arm64-windows
+              ftm:arm64-windows
+            cmake_opts: "-DWITH_BOOST=OFF"
+          - config: "no_fmt_no_boost"
+            dependencies: |
+              gtest:arm64-windows
+              tbb:arm64-windows
+            cmake_opts: "-DWITH_FMT=OFF -DWITH_BOOST=OFF"
+          - config: "no_fmt_no_tbb"
+            dependencies: |
+              boost:arm64-windows
+              gtest:arm64-windows
+            cmake_opts: "-DWITH_FMT=OFF -DWITH_TBB=OFF"
+          - config: "no_boost_no_tbb"
+            dependencies: |
+              gtest:arm64-windows
+              ftm:arm64-windows
+            cmake_opts: "-DWITH_BOOST=OFF -DWITH_TBB=OFF"
 
     runs-on: windows-latest
 
@@ -22,34 +63,17 @@ jobs:
         echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
         echo "CMAKE_TOOLCHAIN_FILE=$(pwd)/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
 
-    - name: Install Boost
+    - name: Install Dependencies
       run: |
-        vcpkg search boost
-        vcpkg install boost:arm64-windows
-        vcpkg integrate install
-    
-    - name: Install GTest
-      run: |
-        vcpkg search gtest
-        vcpkg install gtest:arm64-windows
-        vcpkg integrate install
-    
-    - name: Install TBB
-      run: |
-        vcpkg search tbb
-        vcpkg install tbb:arm64-windows
-        vcpkg integrate install
-    
-    - name: Install FTM
-        run: |
-          vcpkg search ftm
-          vcpkg install ftm:arm64-windows
-          vcpkg integrate install
+        for dep in ${{ matrix.dependencies }}; do
+          .\vcpkg\vcpkg.exe install $dep
+        done
+        .\vcpkg\vcpkg.exe integrate install
 
     - name: Update vcpkg
       run: |
-        vcpkg update
-        vcpkg upgrade --no-dry-run
+        .\vcpkg\vcpkg.exe update
+        .\vcpkg\vcpkg.exe upgrade --no-dry-run
 
     - name: Setup CMake and Ninja
       uses: lukka/get-cmake@v3.21.1
@@ -92,7 +116,7 @@ jobs:
       if: steps.check_msvc.outputs.skip_step != 'true'
       run: |
         echo "CMAKE_TOOLCHAIN_FILE is: $env:CMAKE_TOOLCHAIN_FILE"
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ${{ matrix.cmake_opts }}
 
     - name: List build directory contents
       run: ls -R build/

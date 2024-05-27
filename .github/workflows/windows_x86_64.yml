@@ -2,20 +2,59 @@ name: Windows x86_64
 
 on: [push, pull_request]
 
-env:
-  BUILD_TYPE: Release
-
 jobs:
   build:
-    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         arch: [x86]
+        include:
+          - config: "default"
+            dependencies: |
+              boost:x64-windows
+              gtest:x64-windows
+              tbb:x64-windows
+              ftm:x64-windows
+            cmake_opts: ""
+          - config: "no_fmt"
+            dependencies: |
+              boost:x64-windows
+              gtest:x64-windows
+              tbb:x64-windows
+            cmake_opts: "-DWITH_FMT=OFF"
+          - config: "no_tbb"
+            dependencies: |
+              boost:x64-windows
+              gtest:x64-windows
+              ftm:x64-windows
+            cmake_opts: "-DWITH_TBB=OFF"
+          - config: "no_boost"
+            dependencies: |
+              gtest:x64-windows
+              tbb:x64-windows
+              ftm:x64-windows
+            cmake_opts: "-DWITH_BOOST=OFF"
+          - config: "no_fmt_no_boost"
+            dependencies: |
+              gtest:x64-windows
+              tbb:x64-windows
+            cmake_opts: "-DWITH_FMT=OFF -DWITH_BOOST=OFF"
+          - config: "no_fmt_no_tbb"
+            dependencies: |
+              boost:x64-windows
+              gtest:x64-windows
+            cmake_opts: "-DWITH_FMT=OFF -DWITH_TBB=OFF"
+          - config: "no_boost_no_tbb"
+            dependencies: |
+              gtest:x64-windows
+              ftm:x64-windows
+            cmake_opts: "-DWITH_BOOST=OFF -DWITH_TBB=OFF"
+
+    runs-on: windows-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Install vcpkg
       run: |
@@ -23,35 +62,18 @@ jobs:
         .\vcpkg\bootstrap-vcpkg.bat
         echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
         echo "CMAKE_TOOLCHAIN_FILE=$(pwd)/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
-    
-    - name: Install Boost
+
+    - name: Install Dependencies
       run: |
-        vcpkg search boost
-        vcpkg install boost:x64-windows
-        vcpkg integrate install
-    
-    - name: Install GTest
-      run: |
-        vcpkg search gtest
-        vcpkg install gtest:x64-windows
-        vcpkg integrate install
-    
-    - name: Install TBB
-      run: |
-        vcpkg search tbb
-        vcpkg install tbb:x64-windows
-        vcpkg integrate install
-    
-    - name: Install FTM
-        run: |
-          vcpkg search ftm
-          vcpkg install ftm:x64-windows
-          vcpkg integrate install
+        for dep in ${{ matrix.dependencies }}; do
+          .\vcpkg\vcpkg.exe install $dep
+        done
+        .\vcpkg\vcpkg.exe integrate install
 
     - name: Update vcpkg
       run: |
-        vcpkg update
-        vcpkg upgrade --no-dry-run
+        .\vcpkg\vcpkg.exe update
+        .\vcpkg\vcpkg.exe upgrade --no-dry-run
 
     - name: Setup CMake and Ninja
       uses: lukka/get-cmake@v3.21.1
@@ -64,9 +86,12 @@ jobs:
         try {
           $versionOutput = cl 2>&1
           $match = $versionOutput | Select-String -Pattern "Version (\d+\.\d+)"
+          
           if ($match) {
               $version = [Version]$match.Matches.Groups[1].Value
               Write-Output "MSVC version found: $version"
+
+              # Check if version is less than 19.28
               if ($version -lt [Version]"19.28") {
                   throw "MSVC version is less than 19.28"
               }
@@ -88,22 +113,13 @@ jobs:
       run: .\vcpkg\vcpkg.exe list
 
     - name: Configure CMake
+      if: steps.check_msvc.outputs.skip_step != 'true'
       run: |
         echo "CMAKE_TOOLCHAIN_FILE is: $env:CMAKE_TOOLCHAIN_FILE"
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ${{ matrix.cmake_opts }}
 
+    - name: List build directory contents
+      run: ls -R build/
+      
     - name: Build
-      run: cmake --build build --config ${{ env.BUILD_TYPE }} --verbose
-
-    - name: List build and lib directory contents
-      run: |
-        ls -R build/
-        ls -R build/lib/
-
-    - name: Diagnostics if build fails
-      if: failure()
-      run: |
-        echo "Build failed. Listing build directory contents:"
-        ls -R build/
-        Get-ChildItem -Path .\lib\Release\ -Recurse -Name
-      shell: pwsh
+      run: cmake --build build --config Release --verbose
