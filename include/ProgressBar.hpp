@@ -6,7 +6,7 @@
 #include <iostream>
 #include <chrono>
 //--------------------------------------------------------------
-namespace ProgressBar{
+namespace ProgressBar {
     //--------------------------------------------------------------
     /**
      * @class ProgressBar
