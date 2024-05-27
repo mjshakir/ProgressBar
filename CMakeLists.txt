@@ -25,7 +25,6 @@ endif()
 
 # Build options
 option(BUILD_PROGRESSBAR_SHARED_LIBS "Build using shared libraries" ON)
-option(PROGRESSBAR_BUILD_TESTS "Build the ProgressBar tests" ${PROGRESSBAR_STANDALONE_PROJECT})
 option(PROGRESSBAR_BUILD_EXAMPLE "Build the ProgressBar example application" ${PROGRESSBAR_STANDALONE_PROJECT})
 
 # Force colored output for better diagnostics
@@ -39,11 +38,17 @@ if(${FORCE_COLORED_OUTPUT})
 endif()
 
 # Compiler options
-add_compile_options(-Wall -Wextra -Wpedantic -pedantic-errors -Werror=format-security -fasynchronous-unwind-tables)
+if(MSVC)
+    # MSVC specific warning flags
+    add_compile_options(/W4)  # Equivalent to -Wall in GCC/Clang
+else()
+    # GCC/Clang specific warning flags
+    add_compile_options(-Wall -Wextra -Wpedantic -pedantic-errors -Werror=format-security -fasynchronous-unwind-tables)
+endif()
 
 # Find required packages
 find_package(fmt QUIET)
-# find_package(TBB QUIET)
+find_package(TBB QUIET)
 find_package(Boost QUIET)
 
 # Add external submodule projects
@@ -98,12 +103,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE CircularBuffer::CircularBuffer)
 # Specify the public headers for the library
 set_target_properties(${PROJECT_NAME} PROPERTIES
     PUBLIC_HEADER "include/ProgressBar.hpp")
-
-# Only build the example and tests if this is the main project
-if(PROGRESSBAR_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(test)
-endif()
 
 if(PROGRESSBAR_BUILD_EXAMPLE)
     add_executable(${PROJECT_NAME}_example example/main.cpp)
@@ -180,7 +179,7 @@ endif()
 
 # Set PROGRESSBAR variable
 if(PROGRESSBAR_STANDALONE_PROJECT)
-    set(PROGRESSBAR_LIBRARIES ProgressBar::progressbar)
+    set(PROGRESSBAR_LIBRARIES ${PROJECT_NAME}::progressbar)
 else()
-    set(PROGRESSBAR_LIBRARIES ProgressBar::progressbar PARENT_SCOPE)
+    set(PROGRESSBAR_LIBRARIES ${PROJECT_NAME}::progressbar PARENT_SCOPE)
 endif()
