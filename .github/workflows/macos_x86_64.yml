@@ -42,6 +42,9 @@ jobs:
       with:
         submodules: true
 
+    - name: Initialize submodules
+      run: git submodule update --init --recursive
+
     - name: Setup Homebrew
       run: |
         which brew
