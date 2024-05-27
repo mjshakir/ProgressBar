@@ -22,10 +22,10 @@ jobs:
         echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
         echo "CMAKE_TOOLCHAIN_FILE=$(pwd)/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
 
-    - name: Install CMake
+    - name: Install Boost
       run: |
-        vcpkg search cmake
-        vcpkg install cmake:arm64-windows
+        vcpkg search boost
+        vcpkg install boost:arm64-windows
         vcpkg integrate install
     
     - name: Install GTest
@@ -39,6 +39,12 @@ jobs:
         vcpkg search tbb
         vcpkg install tbb:arm64-windows
         vcpkg integrate install
+    
+    - name: Install FTM
+        run: |
+          vcpkg search ftm
+          vcpkg install ftm:arm64-windows
+          vcpkg integrate install
 
     - name: Update vcpkg
       run: |
