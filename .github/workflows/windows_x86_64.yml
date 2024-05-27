@@ -70,7 +70,12 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        $dependencies = @${{ fromJson(matrix.dependencies) }}
+        $dependencies = @(
+          'boost:x64-windows',
+          'gtest:x64-windows',
+          'tbb:x64-windows',
+          'fmt:x64-windows'
+        )
         foreach ($dep in $dependencies) {
           .\vcpkg\vcpkg.exe install $dep
         }
