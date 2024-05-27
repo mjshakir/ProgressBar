@@ -14,7 +14,7 @@ jobs:
               boost:x64-windows
               gtest:x64-windows
               tbb:x64-windows
-              ftm:x64-windows
+              fmt:x64-windows
             cmake_opts: ""
           - config: "no_fmt"
             dependencies: |
@@ -26,13 +26,13 @@ jobs:
             dependencies: |
               boost:x64-windows
               gtest:x64-windows
-              ftm:x64-windows
+              fmt:x64-windows
             cmake_opts: "-DWITH_TBB=OFF"
           - config: "no_boost"
             dependencies: |
               gtest:x64-windows
               tbb:x64-windows
-              ftm:x64-windows
+              fmt:x64-windows
             cmake_opts: "-DWITH_BOOST=OFF"
           - config: "no_fmt_no_boost"
             dependencies: |
@@ -47,7 +47,7 @@ jobs:
           - config: "no_boost_no_tbb"
             dependencies: |
               gtest:x64-windows
-              ftm:x64-windows
+              fmt:x64-windows
             cmake_opts: "-DWITH_BOOST=OFF -DWITH_TBB=OFF"
 
     runs-on: windows-latest
@@ -70,9 +70,10 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        for dep in ${{ matrix.dependencies }}; do
+        $dependencies = @${{ fromJson(matrix.dependencies) }}
+        foreach ($dep in $dependencies) {
           .\vcpkg\vcpkg.exe install $dep
-        done
+        }
         .\vcpkg\vcpkg.exe integrate install
 
     - name: Update vcpkg
@@ -121,10 +122,10 @@ jobs:
       if: steps.check_msvc.outputs.skip_step != 'true'
       run: |
         echo "CMAKE_TOOLCHAIN_FILE is: $env:CMAKE_TOOLCHAIN_FILE"
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ${{ matrix.cmake_opts }}
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake ${{ matrix.cmake_opts }}
 
     - name: List build directory contents
-      run: ls -R build/
-      
+      run: Get-ChildItem -Recurse build/
+
     - name: Build
       run: cmake --build build --config Release --verbose

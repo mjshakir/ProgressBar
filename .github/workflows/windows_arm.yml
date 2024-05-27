@@ -70,9 +70,10 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        for dep in ${{ matrix.dependencies }}; do
-          .\vcpkg\vcpkg.exe install $dep
-        done
+        $dependencies = @${{ fromJson(matrix.dependencies) }}
+        foreach ($dep in $dependencies) {
+        .\vcpkg\vcpkg.exe install $dep
+        }
         .\vcpkg\vcpkg.exe integrate install
 
     - name: Update vcpkg
@@ -126,5 +127,8 @@ jobs:
     - name: List build directory contents
       run: ls -R build/
       
+    - name: List build directory contents
+      run: Get-ChildItem -Recurse build/
+
     - name: Build
       run: cmake --build build --config Release --verbose
