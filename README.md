@@ -1,6 +1,15 @@
 # ProgressBar
 his utility provides a progress bar with Estimated Time to Completion (ETC) and elapsed time tracking, perfect for monitoring the progress of lengthy operations, such as those found in machine learning projects. This project is inspired by [gipert's progressbar](https://github.com/gipert/progressbar), and it extends the original implementation by adding ETC and elapsed time functionalities for a more informative experience.
 
+## Build Status
+
+| Architecture | Ubuntu | macOS | Windows |
+|--------------|--------|-------|---------|
+| **x86_64**   | ![Ubuntu X86_64](https://github.com/mjshakir/ProgressBar/actions/workflows/ubuntu_X86_64.yml/badge.svg) | ![macOS X86_64](https://github.com/mjshakir/ProgressBar/actions/workflows/macos_x86_64.yml/badge.svg) | ![Windows X86_64](https://github.com/mjshakir/ProgressBar/actions/workflows/windows_x86_64.yml/badge.svg) |
+| **ARM**      | ![Ubuntu ARM](https://github.com/mjshakir/ProgressBar/actions/workflows/ubuntu_arm.yml/badge.svg) | ![macOS ARM](https://github.com/mjshakir/ProgressBar/actions/workflows/macos_arm.yml/badge.svg) | ![Windows ARM](https://github.com/mjshakir/ProgressBar/actions/workflows/windows_arm.yml/badge.svg) |
+| **RISCV**    | ![Ubuntu RISCV](https://github.com/mjshakir/ProgressBar/actions/workflows/ubuntu_riscv.yml/badge.svg) |        |         |
+
+
 ## Features
 
 - **ETC Calculation:** Provides an estimate of the time remaining until completion.
@@ -32,7 +41,7 @@ sudo apt-get update; sudo apt-get install libfmt-dev libtbb-dev libboost-all-dev
 ### Cloning the Repository
 First, clone the MyProgressBar repository using git:
 ```sh
-git clone https://github.com/mjshakir/ProgressBar.git
+git clone https://github.com/mjshakir/ProgressBar.git --recurse-submodules
 ```
 
 ### Building the Project
