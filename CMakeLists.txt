@@ -119,6 +119,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 if(PROGRESSBAR_BUILD_EXAMPLE)
     add_executable(${PROJECT_NAME}_example example/main.cpp)
     target_link_libraries(${PROJECT_NAME}_example PRIVATE ${PROJECT_NAME})
+    add_dependencies(${PROJECT_NAME}_example ${PROJECT_NAME})
 endif()
 
 # Compiler and Linker Options for different build types and platforms
