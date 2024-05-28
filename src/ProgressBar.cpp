@@ -145,7 +145,7 @@ void ProgressBar::ProgressBar::initializer(const std::string& name) const{
     calculate_bar();
     //--------------------------
 #ifdef _WIN32
-    SetConsoleCtrlHandler(ProgressBar::handle_console_signal, TRUE);
+    SetConsoleCtrlHandler(&ProgressBar::ProgressBar::handle_console_signal, TRUE);
 #else
     std::signal(SIGWINCH, handle_winch_signal);
 #endif
@@ -535,7 +535,7 @@ inline void ProgressBar::ProgressBar::clear_lines(bool line){
     //--------------------------
     BOOL WINAPI ProgressBar::ProgressBar::handle_console_signal(DWORD event) {
         //--------------------------
-        if (event == CTRL_WINDOW_EVENT) {
+        if (event == CTRL_C_EVENT or event == CTRL_BREAK_EVENT or event == CTRL_CLOSE_EVENT or event == CTRL_LOGOFF_EVENT or event == CTRL_SHUTDOWN_EVENT) {
             //--------------------------
             clear_lines();
             //--------------------------
