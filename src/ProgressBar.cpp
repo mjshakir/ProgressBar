@@ -145,7 +145,7 @@ void ProgressBar::ProgressBar::initializer(const std::string& name) const{
     calculate_bar();
     //--------------------------
 #ifdef _WIN32
-    SetConsoleCtrlHandler((PHANDLER_ROUTINE)handle_winch_signal, TRUE);
+    SetConsoleCtrlHandler(reinterpret_cast<PHANDLER_ROUTINE>(handle_winch_signal), TRUE);
 #else
     std::signal(SIGWINCH, handle_winch_signal);
 #endif
