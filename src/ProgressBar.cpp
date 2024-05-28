@@ -313,40 +313,56 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void)
     //--------------------------
     void ProgressBar::ProgressBar::display(void) {
         //--------------------------
+        static std::string  completed_bar,
+                            incomplete_bar,
+                            green_part,
+                            red_part, 
+                            colored_bar,
+                            formatted_bar,
+                            formatted_time;
+        //--------------------------
+        // Reserve memory for static strings
+        //--------------------------
+        completed_bar.reserve(m_bar_length);
+        incomplete_bar.reserve(m_bar_length);
+        green_part.reserve(m_bar_length);
+        red_part.reserve(m_bar_length);
+        colored_bar.reserve(m_bar_length * 2UL + 1UL);      // To account for the combined bar and the "]"
+        formatted_bar.reserve(m_bar_length * 2UL + 50UL);   // Adjust size based on expected length
+        formatted_time.reserve(100UL);                      // Adjust size based on expected length
+        //--------------------------
         size_t position = 0UL, percent = 0UL;
         //--------------------------
-        if (m_total != 0UL and m_total != std::numeric_limits<size_t>::max()) {
-            m_progress          = std::clamp(m_progress, static_cast<size_t>(0UL), m_total);
-            const double ratio  = m_total > 0UL ? static_cast<double>(m_progress) / static_cast<double>(m_total) : 0.;
-            percent             = static_cast<size_t>(ratio * 100UL);
-            position            = static_cast<size_t>(m_bar_length * ratio);
+        if (m_total != 0UL && m_total != std::numeric_limits<size_t>::max()) {
+            m_progress = std::clamp(m_progress, static_cast<size_t>(0UL), m_total);
+            const double ratio = m_total > 0UL ? static_cast<double>(m_progress) / static_cast<double>(m_total) : 0.;
+            percent = static_cast<size_t>(ratio * 100UL);
+            position = static_cast<size_t>(m_bar_length * ratio);
         } else {
             position = m_progress % m_bar_length;
-        }// end if (m_total != 0 and m_total != std::numeric_limits<size_t>::max())
+        }// end if (m_total != 0UL && m_total != std::numeric_limits<size_t>::max())
         //--------------------------
-        const std::string completed_bar(position, m_progress_char[0]);                      // Constructs a string of 'position' count of progress chars.
-        const std::string incomplete_bar(m_bar_length - position, m_empty_space_char[0]);   // Remaining part.
+        // Reuse static variables for string construction
         //--------------------------
-        const std::string elapsed_time    = append_time(calculate_elapsed(), "Elapsed:");
-        const std::string etc_time        = (m_total != 0UL and m_total != std::numeric_limits<size_t>::max()) ? append_time(calculate_etc(), "ETC:") : "ETC: N/A ";
+        completed_bar.assign(position, m_progress_char[0]);
+        incomplete_bar.assign(m_bar_length - position, m_empty_space_char[0]);
         //--------------------------
-        // Format the progress bar with colors.
-        const std::string green_part  = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{}", completed_bar);
-        const std::string red_part    = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::red), "{}", incomplete_bar);
+        const std::string elapsed_time = append_time(calculate_elapsed(), "Elapsed:");
+        const std::string etc_time = (m_total != 0UL && m_total != std::numeric_limits<size_t>::max()) ? append_time(calculate_etc(), "ETC:") : "ETC: N/A ";
         //--------------------------
-        std::string colored_bar;
-        colored_bar.reserve(green_part.size() + red_part.size() + 1UL);  // +1 for the "]" character
+        // Use fmt library to format with colors
+        green_part = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{}", completed_bar);
+        red_part = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::red), "{}", incomplete_bar);
+        //--------------------------
         colored_bar = green_part + red_part + "]";
         //--------------------------
-        std::string formatted_bar = fmt::format("\r{}: {:3d}% [{}{} ", m_name, percent, colored_bar, std::string(m_spaces_after_bar, ' '));
+        formatted_bar = fmt::format("\r{}: {:3d}% [{}{} ", m_name, percent, colored_bar, std::string(m_spaces_after_bar, ' '));
         //--------------------------
         if (m_available_width < MIN_WIDTH) {
             formatted_bar = fmt::format("\r{:3d}% [{}]", percent, completed_bar + incomplete_bar);
         }// end if (m_available_width < MIN_WIDTH)
         //--------------------------
-        const std::string formatted_time = fmt::format("{} {}", elapsed_time, etc_time);
-        //--------------------------
-        // Use bold emphasis for printing.
+        formatted_time = fmt::format("{} {}", elapsed_time, etc_time);
         //--------------------------
         std::cout << fmt::format(fmt::emphasis::bold, "\x1b[A{} \n{}", formatted_bar, formatted_time);
         std::cout.flush();
