@@ -14,6 +14,9 @@
     #include <execution>
 #endif
 #include <stdexcept>
+#ifdef _WIN32
+    #define NOMINMAX // Prevent windows.h from defining min and max macros
+#endif
 #ifndef _WIN32
     #include <unistd.h>
     #include <sys/ioctl.h>
@@ -546,7 +549,7 @@ inline void ProgressBar::ProgressBar::clear_lines(bool line){
         }//end if (event == CTRL_WINDOW_EVENT)
         //--------------------------
         return TRUE;
-    }// end BOOL ProgressBar::ProgressBar::handle_console_resize(DWORD event)
+    }// end BOOL WINAPI ProgressBar::ProgressBar::handle_winch_signal(DWORD event)
     //--------------------------
 #else
     //--------------------------   
