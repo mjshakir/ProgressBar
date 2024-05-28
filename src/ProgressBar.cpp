@@ -224,7 +224,7 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
     //--------------------------
 }// end double ProgressBar::ProgressBar::calculate_etc(void) 
 //--------------------------------------------------------------
-std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void) {
+inline std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void) const{
     //--------------------------
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_start_time).count();
     //--------------------------

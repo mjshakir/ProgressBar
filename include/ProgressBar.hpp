@@ -173,7 +173,7 @@ namespace ProgressBar {
             //--------------------------
             std::chrono::milliseconds::rep calculate_etc(void);
             //--------------------------
-            std::chrono::milliseconds::rep calculate_elapsed(void);
+            inline std::chrono::milliseconds::rep calculate_elapsed(void) const;
             //--------------------------
             static inline size_t get_terminal_width(void);
             //--------------------------
