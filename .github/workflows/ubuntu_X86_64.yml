@@ -54,6 +54,9 @@ jobs:
     - name: Check GCC Version
       run: g++ --version
 
+    - name: Print Configuration
+      run: 'echo "Running configuration: ${{ matrix.config.name }}"'
+
     - name: Create build directory
       run: mkdir build
 
