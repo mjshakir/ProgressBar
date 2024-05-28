@@ -9,6 +9,7 @@
 // Windows library
 //--------------------------------------------------------------
 #ifdef _WIN32
+    #define NOMINMAX // Prevent windows.h from defining min and max macros
     #include <windows.h>
 #endif
 //--------------------------------------------------------------

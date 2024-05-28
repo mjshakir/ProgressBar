@@ -14,9 +14,6 @@
     #include <execution>
 #endif
 #include <stdexcept>
-#ifdef _WIN32
-    #define NOMINMAX // Prevent windows.h from defining min and max macros
-#endif
 #ifndef _WIN32
     #include <unistd.h>
     #include <sys/ioctl.h>
