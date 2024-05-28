@@ -134,6 +134,10 @@ if(MSVC)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         target_link_options(${PROJECT_NAME} PRIVATE /DEBUG)
     endif()
+
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS TRUE
+    )
 else()
     # For non-MSVC compilers
     target_compile_options(${PROJECT_NAME} PRIVATE 
