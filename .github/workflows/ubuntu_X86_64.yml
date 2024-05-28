@@ -8,29 +8,29 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x86]
-        include:
-          - config: "default"
+        config:
+          - name: "default"
             install: "sudo apt-get install -y libfmt-dev libtbb-dev libboost-all-dev ninja-build"
             cmake_opts: ""
-          - config: "no_fmt"
+          - name: "no_fmt"
             install: "sudo apt-get install -y libtbb-dev libboost-all-dev ninja-build"
             cmake_opts: "-DWITH_FMT=OFF"
-          - config: "no_tbb"
+          - name: "no_tbb"
             install: "sudo apt-get install -y libfmt-dev libboost-all-dev ninja-build"
             cmake_opts: "-DWITH_TBB=OFF"
-          - config: "no_boost"
+          - name: "no_boost"
             install: "sudo apt-get install -y libfmt-dev libtbb-dev ninja-build"
             cmake_opts: "-DWITH_BOOST=OFF"
-          - config: "no_fmt_no_tbb"
+          - name: "no_fmt_no_tbb"
             install: "sudo apt-get install -y libboost-all-dev ninja-build"
             cmake_opts: "-DWITH_FMT=OFF -DWITH_TBB=OFF"
-          - config: "no_fmt_no_boost"
+          - name: "no_fmt_no_boost"
             install: "sudo apt-get install -y libtbb-dev ninja-build"
             cmake_opts: "-DWITH_FMT=OFF -DWITH_BOOST=OFF"
-          - config: "no_tbb_no_boost"
+          - name: "no_tbb_no_boost"
             install: "sudo apt-get install -y libfmt-dev ninja-build"
             cmake_opts: "-DWITH_TBB=OFF -DWITH_BOOST=OFF"
-          - config: "no_fmt_no_tbb_no_boost"
+          - name: "no_fmt_no_tbb_no_boost"
             install: "sudo apt-get install -y ninja-build"
             cmake_opts: "-DWITH_FMT=OFF -DWITH_TBB=OFF -DWITH_BOOST=OFF"
 
@@ -46,7 +46,7 @@ jobs:
       run: git submodule update --init --recursive
 
     - name: Install dependencies
-      run: sudo apt-get update && ${{ matrix.install }}
+      run: sudo apt-get update && ${{ matrix.config.install }}
 
     - name: Setup CMake and Ninja
       uses: lukka/get-cmake@v3.21.1
@@ -58,10 +58,10 @@ jobs:
       run: mkdir build
 
     - name: Configure CMake
-      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_opts }}
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_opts }}
 
     - name: Build
       run: cmake --build build --config Release
     
-    - name: Example
+    - name: Run example
       run: ./build/bin/ProgressBar_progressbar_example
