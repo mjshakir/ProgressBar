@@ -6,6 +6,12 @@
 #include <iostream>
 #include <chrono>
 //--------------------------------------------------------------
+// Windows library
+//--------------------------------------------------------------
+#ifdef _WIN32
+    #include <windows.h>
+#endif
+//--------------------------------------------------------------
 namespace ProgressBar {
     //--------------------------------------------------------------
     /**
@@ -192,7 +198,11 @@ namespace ProgressBar {
             //--------------------------
             static inline void clear_lines(bool line = false);
             //--------------------------
+#ifdef _WIN32
+            BOOL WINAPI handle_winch_signal(DWORD event);
+#else
             static void handle_winch_signal(int signum);
+#endif
         //--------------------------------------------------------------
     };// end class ProgressBar
     //--------------------------------------------------------------

@@ -14,8 +14,10 @@
     #include <execution>
 #endif
 #include <stdexcept>
-#include <unistd.h>
-#include <sys/ioctl.h>
+#ifndef _WIN32
+    #include <unistd.h>
+    #include <sys/ioctl.h>
+#endif
 #include <cerrno> // for errno
 #include <cstring> // for strerror
 #include <string_view>
@@ -142,7 +144,11 @@ void ProgressBar::ProgressBar::initializer(const std::string& name) const{
     //--------------------------
     calculate_bar();
     //--------------------------
+#ifdef _WIN32
+    SetConsoleCtrlHandler((PHANDLER_ROUTINE)handle_winch_signal, TRUE);
+#else
     std::signal(SIGWINCH, handle_winch_signal);
+#endif
     //--------------------------
 }// end void ProgressBar::ProgressBar::initializer(const std::string& name) const
 //--------------------------------------------------------------
@@ -446,6 +452,25 @@ inline bool ProgressBar::ProgressBar::is_done(void) const{
 }// end bool ProgressBar::ProgressBar::is_done(void)
 //--------------------------------------------------------------
 inline size_t ProgressBar::ProgressBar::get_terminal_width(void) {
+#ifdef _WIN32
+    //--------------------------
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    //--------------------------
+    int columns;
+    //--------------------------
+    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+        //--------------------------
+        columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+        //--------------------------
+    } else {
+        //--------------------------
+        columns = DEFAULT_WIDTH; // Default width if unable to get console size
+        //--------------------------
+    }// end if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi))
+    //--------------------------
+    return columns;
+    //--------------------------
+#else
     //--------------------------
     struct winsize size;
     //--------------------------
@@ -458,6 +483,7 @@ inline size_t ProgressBar::ProgressBar::get_terminal_width(void) {
     //--------------------------
     return size.ws_col;
     //--------------------------
+#endif
 }// end void ProgressBar::ProgressBar::print_terminal_width(void)
 //--------------------------------------------------------------
 void ProgressBar::ProgressBar::calculate_bar(void) {
@@ -505,17 +531,37 @@ inline void ProgressBar::ProgressBar::clear_lines(bool line){
     //--------------------------
 }// end void ProgressBar::ProgressBar::clear_lines(void)
 //--------------------------------------------------------------
-void ProgressBar::ProgressBar::handle_winch_signal(int signum) {
+#ifdef _WIN32
     //--------------------------
-    if (signum == SIGWINCH) {
+    BOOL WINAPI ProgressBar::ProgressBar::handle_winch_signal(DWORD event) {
         //--------------------------
-        clear_lines();
+        if (event == CTRL_WINDOW_EVENT) {
+            //--------------------------
+            clear_lines();
+            //--------------------------
+            calculate_bar();
+            //--------------------------
+            clear_lines(true);
+            //--------------------------
+        }//end if (event == CTRL_WINDOW_EVENT)
         //--------------------------
-        calculate_bar();
-        //--------------------------
-        clear_lines(true);
-        //--------------------------
-    }//end if (signum == SIGWINCH)
+        return TRUE;
+    }// end BOOL ProgressBar::ProgressBar::handle_console_resize(DWORD event)
     //--------------------------
-}// end void ProgressBar::ProgressBar::handle_winch_signal(int signum)
+#else
+    //--------------------------   
+    void ProgressBar::ProgressBar::handle_winch_signal(int signum) {
+        //--------------------------
+        if (signum == SIGWINCH) {
+            //--------------------------
+            clear_lines();
+            //--------------------------
+            calculate_bar();
+            //--------------------------
+            clear_lines(true);
+            //--------------------------
+        }//end if (signum == SIGWINCH)
+        //--------------------------
+    }// end void ProgressBar::ProgressBar::handle_winch_signal(int signum)
+#endif
 //--------------------------------------------------------------
