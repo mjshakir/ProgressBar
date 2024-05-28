@@ -200,7 +200,7 @@ namespace ProgressBar {
             static inline void clear_lines(bool line = false);
             //--------------------------
 #ifdef _WIN32
-            BOOL WINAPI handle_winch_signal(DWORD event);
+            BOOL WINAPI handle_console_signal(DWORD event);
 #else
             static void handle_winch_signal(int signum);
 #endif
