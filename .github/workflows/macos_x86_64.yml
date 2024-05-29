@@ -53,7 +53,7 @@ jobs:
         fi
 
     - name: Install dependencies
-      run: ${{ matrix.install }}
+      run: ${{ matrix.config.install }}
 
     - name: Setup CMake and Ninja
       uses: lukka/get-cmake@v3.21.1
@@ -65,7 +65,7 @@ jobs:
       run: mkdir build
 
     - name: Configure CMake
-      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake_opts }}
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_opts }}
 
     - name: Build
       run: cmake --build build --config Release
