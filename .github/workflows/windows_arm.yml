@@ -8,46 +8,46 @@ jobs:
       fail-fast: false
       matrix:
         arch: [arm]
-        include:
-          - config: "default"
+        config:
+          - name: "default"
             dependencies: |
               boost:arm64-windows
               gtest:arm64-windows
               tbb:arm64-windows
-              ftm:arm64-windows
+              fmt:arm64-windows
             cmake_opts: ""
-          - config: "no_fmt"
+          - name: "no_fmt"
             dependencies: |
               boost:arm64-windows
               gtest:arm64-windows
               tbb:arm64-windows
             cmake_opts: "-DWITH_FMT=OFF"
-          - config: "no_tbb"
+          - name: "no_tbb"
             dependencies: |
               boost:arm64-windows
               gtest:arm64-windows
-              ftm:arm64-windows
+              fmt:arm64-windows
             cmake_opts: "-DWITH_TBB=OFF"
-          - config: "no_boost"
+          - name: "no_boost"
             dependencies: |
               gtest:arm64-windows
               tbb:arm64-windows
-              ftm:arm64-windows
+              fmt:arm64-windows
             cmake_opts: "-DWITH_BOOST=OFF"
-          - config: "no_fmt_no_boost"
+          - name: "no_fmt_no_boost"
             dependencies: |
               gtest:arm64-windows
               tbb:arm64-windows
             cmake_opts: "-DWITH_FMT=OFF -DWITH_BOOST=OFF"
-          - config: "no_fmt_no_tbb"
+          - name: "no_fmt_no_tbb"
             dependencies: |
               boost:arm64-windows
               gtest:arm64-windows
             cmake_opts: "-DWITH_FMT=OFF -DWITH_TBB=OFF"
-          - config: "no_boost_no_tbb"
+          - name: "no_boost_no_tbb"
             dependencies: |
               gtest:arm64-windows
-              ftm:arm64-windows
+              fmt:arm64-windows
             cmake_opts: "-DWITH_BOOST=OFF -DWITH_TBB=OFF"
 
     runs-on: windows-latest
@@ -57,7 +57,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: true
-    
+
     - name: Initialize submodules
       run: git submodule update --init --recursive
 
@@ -65,17 +65,12 @@ jobs:
       run: |
         git clone https://github.com/microsoft/vcpkg.git
         .\vcpkg\bootstrap-vcpkg.bat
-        echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
-        echo "CMAKE_TOOLCHAIN_FILE=$(pwd)/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
+        echo "VCPKG_ROOT=$(pwd)\vcpkg" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+        echo "CMAKE_TOOLCHAIN_FILE=$(pwd)\vcpkg\scripts\buildsystems\vcpkg.cmake" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Install Dependencies
       run: |
-        $dependencies = @(
-          'boost:arm64-windows',
-          'gtest:arm64-windows',
-          'tbb:arm64-windows',
-          'fmt:arm64-windows'
-        )
+        $dependencies = @(${matrix.config.dependencies})
         foreach ($dep in $dependencies) {
           .\vcpkg\vcpkg.exe install $dep
         }
@@ -126,12 +121,9 @@ jobs:
     - name: Configure CMake
       if: steps.check_msvc.outputs.skip_step != 'true'
       run: |
-        echo "CMAKE_TOOLCHAIN_FILE is: $env:CMAKE_TOOLCHAIN_FILE"
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ${{ matrix.cmake_opts }}
+        echo "CMAKE_TOOLCHAIN_FILE is: $Env:CMAKE_TOOLCHAIN_FILE"
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ${{ matrix.config.cmake_opts }}
 
-    - name: List build directory contents
-      run: ls -R build/
-      
     - name: List build directory contents
       run: Get-ChildItem -Recurse build/
 
