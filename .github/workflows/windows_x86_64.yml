@@ -128,4 +128,4 @@ jobs:
       run: Get-ChildItem -Recurse build/
 
     - name: Build
-      run: cmake --build build --config Release --verbose
+      run: cmake --build build/${{ matrix.config.name }} --config Release --verbose
