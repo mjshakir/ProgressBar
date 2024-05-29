@@ -65,8 +65,8 @@ jobs:
       run: |
         git clone https://github.com/microsoft/vcpkg.git
         .\vcpkg\bootstrap-vcpkg.bat
-        echo "VCPKG_ROOT=$(pwd)/vcpkg" >> $GITHUB_ENV
-        echo "CMAKE_TOOLCHAIN_FILE=$(pwd)/vcpkg/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
+        echo "VCPKG_ROOT=$(pwd)\vcpkg" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+        echo "CMAKE_TOOLCHAIN_FILE=$(pwd)\vcpkg\scripts\buildsystems\vcpkg.cmake" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Install Dependencies
       run: |
@@ -121,8 +121,8 @@ jobs:
     - name: Configure CMake
       if: steps.check_msvc.outputs.skip_step != 'true'
       run: |
-        echo "CMAKE_TOOLCHAIN_FILE is: $env:CMAKE_TOOLCHAIN_FILE"
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$env:CMAKE_TOOLCHAIN_FILE ${{ matrix.config.cmake_opts }}
+        echo "CMAKE_TOOLCHAIN_FILE is: $Env:CMAKE_TOOLCHAIN_FILE"
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$Env:CMAKE_TOOLCHAIN_FILE ${{ matrix.config.cmake_opts }}
 
     - name: List build directory contents
       run: Get-ChildItem -Recurse build/
