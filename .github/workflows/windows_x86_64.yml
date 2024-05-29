@@ -1,0 +1,131 @@
+name: Windows x86_64
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86]
+        config:
+          - name: "default"
+            dependencies: |
+              boost:x64-windows
+              gtest:x64-windows
+              tbb:x64-windows
+              fmt:x64-windows
+            cmake_opts: ""
+          - name: "no_fmt"
+            dependencies: |
+              boost:x64-windows
+              gtest:x64-windows
+              tbb:x64-windows
+            cmake_opts: "-DWITH_FMT=OFF"
+          - name: "no_tbb"
+            dependencies: |
+              boost:x64-windows
+              gtest:x64-windows
+              fmt:x64-windows
+            cmake_opts: "-DWITH_TBB=OFF"
+          - name: "no_boost"
+            dependencies: |
+              gtest:x64-windows
+              tbb:x64-windows
+              fmt:x64-windows
+            cmake_opts: "-DWITH_BOOST=OFF"
+          - name: "no_fmt_no_boost"
+            dependencies: |
+              gtest:x64-windows
+              tbb:x64-windows
+            cmake_opts: "-DWITH_FMT=OFF -DWITH_BOOST=OFF"
+          - name: "no_fmt_no_tbb"
+            dependencies: |
+              boost:x64-windows
+              gtest:x64-windows
+            cmake_opts: "-DWITH_FMT=OFF -DWITH_TBB=OFF"
+          - name: "no_boost_no_tbb"
+            dependencies: |
+              gtest:x64-windows
+              fmt:x64-windows
+            cmake_opts: "-DWITH_BOOST=OFF -DWITH_TBB=OFF"
+
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        submodules: true
+
+    - name: Initialize submodules
+      run: git submodule update --init --recursive
+
+    - name: Install vcpkg
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        .\vcpkg\bootstrap-vcpkg.bat
+        echo "VCPKG_ROOT=$(pwd)\vcpkg" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+        echo "CMAKE_TOOLCHAIN_FILE=$(pwd)\vcpkg\scripts\buildsystems\vcpkg.cmake" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: Install Dependencies
+      run: |
+        $dependencies = @(${matrix.config.dependencies})
+        foreach ($dep in $dependencies) {
+          .\vcpkg\vcpkg.exe install $dep
+        }
+        .\vcpkg\vcpkg.exe integrate install
+
+    - name: Update vcpkg
+      run: |
+        .\vcpkg\vcpkg.exe update
+        .\vcpkg\vcpkg.exe upgrade --no-dry-run
+
+    - name: Setup CMake and Ninja
+      uses: lukka/get-cmake@v3.21.1
+
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Check MSVC Version
+      run: |
+        try {
+          $versionOutput = cl 2>&1
+          $match = $versionOutput | Select-String -Pattern "Version (\d+\.\d+)"
+          
+          if ($match) {
+              $version = [Version]$match.Matches.Groups[1].Value
+              Write-Output "MSVC version found: $version"
+
+              # Check if version is less than 19.28
+              if ($version -lt [Version]"19.28") {
+                  throw "MSVC version is less than 19.28"
+              }
+          } else {
+              Write-Output "MSVC version could not be determined. Skipping version check."
+              echo "::set-output name=skip_step::true"
+          }
+        } catch {
+          throw $_
+        }
+      shell: pwsh
+      id: check_msvc
+
+    - name: Create build directory
+      if: steps.check_msvc.outputs.skip_step != 'true'
+      run: mkdir build
+
+    - name: Verify vcpkg Installation
+      run: .\vcpkg\vcpkg.exe list
+
+    - name: Configure CMake
+      if: steps.check_msvc.outputs.skip_step != 'true'
+      run: |
+        echo "CMAKE_TOOLCHAIN_FILE is: $Env:CMAKE_TOOLCHAIN_FILE"
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ${{ matrix.config.cmake_opts }}
+
+    - name: List build directory contents
+      run: Get-ChildItem -Recurse build/
+
+    - name: Build
+      run: cmake --build build --config Release --verbose

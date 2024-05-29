@@ -6,7 +6,14 @@
 #include <iostream>
 #include <chrono>
 //--------------------------------------------------------------
-namespace ProgressBar{
+// Windows library
+//--------------------------------------------------------------
+#ifdef _WIN32
+    #define NOMINMAX // Prevent windows.h from defining min and max macros
+    #include <windows.h>
+#endif
+//--------------------------------------------------------------
+namespace ProgressBar {
     //--------------------------------------------------------------
     /**
      * @class ProgressBar
@@ -155,7 +162,7 @@ namespace ProgressBar{
             //--------------------------
             #ifndef HAVE_FMT
                 //--------------------------
-                void append_time(std::stringstream& ss, const std::chrono::milliseconds::rep& time, const std::string& label);
+                void append_time(std::ostringstream& ss, const std::chrono::milliseconds::rep& time, const std::string& label);
                 //--------------------------
             #endif
             //--------------------------
@@ -169,19 +176,20 @@ namespace ProgressBar{
             //--------------------------
             void tick(void);
             //--------------------------
-            bool is_done(void) const ;
+            inline bool is_done(void) const ;
             //--------------------------
             std::chrono::milliseconds::rep calculate_etc(void);
             //--------------------------
-            std::chrono::milliseconds::rep calculate_elapsed(void);
+            inline std::chrono::milliseconds::rep calculate_elapsed(void) const;
             //--------------------------
-            static size_t get_terminal_width(void);
+            static inline size_t get_terminal_width(void);
             //--------------------------
             static void calculate_bar(void); 
             //--------------------------------------------------------------
         private:
             //--------------------------------------------------------------
-            size_t m_total, m_progress;
+            const size_t m_total;
+            size_t m_progress;
             //--------------------------
             const std::string m_name, m_progress_char, m_empty_space_char;
             //--------------------------
@@ -189,11 +197,15 @@ namespace ProgressBar{
             //--------------------------
             static size_t m_name_length, m_bar_length, m_available_width, m_spaces_after_bar;
             //--------------------------
-            static void clear_lines(bool line = false);
+            static inline void clear_lines(bool line = false);
             //--------------------------
+#ifdef _WIN32
+            static BOOL WINAPI handle_console_signal(DWORD event);
+#else
             static void handle_winch_signal(int signum);
+#endif
         //--------------------------------------------------------------
     };// end class ProgressBar
     //--------------------------------------------------------------
-}//end namespace CircleEquation
+}//end namespace ProgressBar
 //--------------------------------------------------------------

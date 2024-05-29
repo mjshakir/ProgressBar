@@ -25,8 +25,10 @@ endif()
 
 # Build options
 option(BUILD_PROGRESSBAR_SHARED_LIBS "Build using shared libraries" ON)
-option(PROGRESSBAR_BUILD_TESTS "Build the ProgressBar tests" ${PROGRESSBAR_STANDALONE_PROJECT})
 option(PROGRESSBAR_BUILD_EXAMPLE "Build the ProgressBar example application" ${PROGRESSBAR_STANDALONE_PROJECT})
+option(WITH_FMT "Include fmt library" ON)
+option(WITH_TBB "Include TBB library" ON)
+option(WITH_BOOST "Include Boost library" ON)
 
 # Force colored output for better diagnostics
 option(FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." OFF)
@@ -39,20 +41,16 @@ if(${FORCE_COLORED_OUTPUT})
 endif()
 
 # Compiler options
-add_compile_options(-Wall -Wextra -Wpedantic)
-
-# Find required packages
-find_package(fmt QUIET)
-find_package(TBB QUIET)
-find_package(Boost QUIET)
-
-# Create the library
-# file(GLOB SOURCES "src/*.cpp")
-set(SOURCES src/ProgressBar.cpp)
-if(NOT Boost_FOUND)
-    list(APPEND SOURCES src/CircularBuffer.cpp)
+if(MSVC)
+    # MSVC specific warning flags
+    add_compile_options(/W4)  # Equivalent to -Wall in GCC/Clang
+else()
+    # GCC/Clang specific warning flags
+    add_compile_options(-Wall -Wextra -Wpedantic -pedantic-errors -Werror=format-security -fasynchronous-unwind-tables)
 endif()
 
+# Create the library
+set(SOURCES src/ProgressBar.cpp)
 
 if(BUILD_PROGRESSBAR_SHARED_LIBS)
     add_library(${PROJECT_NAME} SHARED ${SOURCES})
@@ -62,7 +60,6 @@ endif()
 
 add_library(ProgressBar::progressbar ALIAS ${PROJECT_NAME})
 
-
 # Specify properties and requirements for the library
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -70,47 +67,70 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 
 # Link dependencies
-if(fmt_FOUND)
-    target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_FMT)
-    message(STATUS "Found fmt")
-else()
-    message(STATUS "fmt not found")
+if(WITH_FMT)
+    find_package(fmt QUIET)
+    if(fmt_FOUND)
+        target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_FMT)
+    else()
+        message(STATUS "fmt not found or disabled")
+    endif()
 endif()
 
-if(TBB_FOUND)
-    target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_TBB)
-    message(STATUS "Found TBB")
-else()
-    message(STATUS "TBB not found")
+if(WITH_TBB)
+    find_package(TBB QUIET)
+    if(TBB_FOUND)
+        target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_TBB)
+    else()
+        message(STATUS "TBB not found or disabled")
+    endif()
 endif()
 
-if(Boost_FOUND)
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${Boost_LIBRARIES})
-    target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
-    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOOST)
-    message(STATUS "Found Boost")
+if(WITH_BOOST)
+    find_package(Boost QUIET)
+    if(Boost_FOUND)
+        target_link_libraries(${PROJECT_NAME} PUBLIC ${Boost_LIBRARIES})
+        target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})
+        target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOOST)
+    else()
+        message(STATUS "Boost not found or disabled")
+        # Add external submodule projects
+        if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external_libraries/CircularBuffer)
+            add_subdirectory(external_libraries/CircularBuffer)
+        else()
+            message(FATAL_ERROR "external_libraries/CircularBuffer directory not found")
+        endif()
+    endif()
 else()
-    message(STATUS "Boost not found")
+    # Add external submodule projects
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external_libraries/CircularBuffer)
+        add_subdirectory(external_libraries/CircularBuffer)
+    else()
+        message(FATAL_ERROR "external_libraries/CircularBuffer directory not found")
+    endif()
+endif()
+
+# Link CircularBuffer if Boost is not used
+if(NOT WITH_BOOST OR NOT Boost_FOUND)
+    if(TARGET CircularBuffer::CircularBuffer)
+        target_link_libraries(${PROJECT_NAME} PRIVATE CircularBuffer::CircularBuffer)
+    else()
+        message(FATAL_ERROR "CircularBuffer target not found")
+    endif()
 endif()
 
 # Specify the public headers for the library
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    PUBLIC_HEADER "include/ProgressBar.hpp;include/CircularBuffer.hpp")
-
-# Only build the example and tests if this is the main project
-if(PROGRESSBAR_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(test)
-endif()
+    PUBLIC_HEADER "include/ProgressBar.hpp")
 
 if(PROGRESSBAR_BUILD_EXAMPLE)
     add_executable(${PROJECT_NAME}_example example/main.cpp)
     target_link_libraries(${PROJECT_NAME}_example PRIVATE ${PROJECT_NAME})
+    add_dependencies(${PROJECT_NAME}_example ${PROJECT_NAME})
 endif()
 
-# Compiler and Linker Options for different build types
+# Compiler and Linker Options for different build types and platforms
 if(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "/O2 /MD")
     set(CMAKE_CXX_FLAGS_DEBUG "/Od /MDd")
@@ -122,6 +142,10 @@ if(MSVC)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         target_link_options(${PROJECT_NAME} PRIVATE /DEBUG)
     endif()
+
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS TRUE
+    )
 else()
     # For non-MSVC compilers
     target_compile_options(${PROJECT_NAME} PRIVATE 
@@ -141,8 +165,10 @@ else()
 endif()
 
 # Installation and export setup
+# Installation and export setup
 if(PROGRESSBAR_STANDALONE_PROJECT)
     include(GNUInstallDirs)
+    include(CMakePackageConfigHelpers)
     install(TARGETS ${PROJECT_NAME}
         EXPORT ${PROJECT_NAME}Targets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -150,6 +176,15 @@ if(PROGRESSBAR_STANDALONE_PROJECT)
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
     )
+
+    if(NOT WITH_BOOST OR NOT Boost_FOUND)
+        install(TARGETS CircularBuffer
+            EXPORT ${PROJECT_NAME}Targets
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+    endif()
 
     # Exporting and versioning
     install(EXPORT ${PROJECT_NAME}Targets
@@ -178,9 +213,9 @@ if(PROGRESSBAR_STANDALONE_PROJECT)
     )
 endif()
 
-# Set THREADPOOL_LIBRARIES variable
+# Set PROGRESSBAR variable
 if(PROGRESSBAR_STANDALONE_PROJECT)
-    set(PROGRESSBAR_LIBRARIES ProgressBar::progressbar)
+    set(PROGRESSBAR_LIBRARIES ${PROJECT_NAME}::progressbar)
 else()
-    set(PROGRESSBAR_LIBRARIES ProgressBar::progressbar PARENT_SCOPE)
+    set(PROGRESSBAR_LIBRARIES ${PROJECT_NAME}::progressbar PARENT_SCOPE)
 endif()

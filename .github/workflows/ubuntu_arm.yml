@@ -1,0 +1,67 @@
+name: Ubuntu ARM
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm]
+        config:
+          - name: "default"
+            install: "sudo apt-get install -y libfmt-dev libtbb-dev libboost-all-dev ninja-build"
+            cmake_opts: ""
+          - name: "no_fmt"
+            install: "sudo apt-get install -y libtbb-dev libboost-all-dev ninja-build"
+            cmake_opts: "-DWITH_FMT=OFF"
+          - name: "no_tbb"
+            install: "sudo apt-get install -y libfmt-dev libboost-all-dev ninja-build"
+            cmake_opts: "-DWITH_TBB=OFF"
+          - name: "no_boost"
+            install: "sudo apt-get install -y libfmt-dev libtbb-dev ninja-build"
+            cmake_opts: "-DWITH_BOOST=OFF"
+          - name: "no_fmt_no_tbb"
+            install: "sudo apt-get install -y libboost-all-dev ninja-build"
+            cmake_opts: "-DWITH_FMT=OFF -DWITH_TBB=OFF"
+          - name: "no_fmt_no_boost"
+            install: "sudo apt-get install -y libtbb-dev ninja-build"
+            cmake_opts: "-DWITH_FMT=OFF -DWITH_BOOST=OFF"
+          - name: "no_tbb_no_boost"
+            install: "sudo apt-get install -y libfmt-dev ninja-build"
+            cmake_opts: "-DWITH_TBB=OFF -DWITH_BOOST=OFF"
+          - name: "no_fmt_no_tbb_no_boost"
+            install: "sudo apt-get install -y ninja-build"
+            cmake_opts: "-DWITH_FMT=OFF -DWITH_TBB=OFF -DWITH_BOOST=OFF"
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        submodules: true
+
+    - name: Initialize submodules
+      run: git submodule update --init --recursive
+
+    - name: Install dependencies
+      run: sudo apt-get update && ${{ matrix.config.install }}
+
+    - name: Setup CMake and Ninja
+      uses: lukka/get-cmake@v3.21.1
+
+    - name: Check GCC Version
+      run: g++ --version
+
+    - name: Print Configuration
+      run: 'echo "Running configuration: ${{ matrix.config.name }}"'
+
+    - name: Create build directory
+      run: mkdir build
+
+    - name: Configure CMake
+      run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.config.cmake_opts }}
+
+    - name: Build
+      run: cmake --build build --config Release

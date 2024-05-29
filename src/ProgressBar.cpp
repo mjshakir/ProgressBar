@@ -14,8 +14,10 @@
     #include <execution>
 #endif
 #include <stdexcept>
-#include <unistd.h>
-#include <sys/ioctl.h>
+#ifndef _WIN32
+    #include <unistd.h>
+    #include <sys/ioctl.h>
+#endif
 #include <cerrno> // for errno
 #include <cstring> // for strerror
 #include <string_view>
@@ -77,28 +79,30 @@ constexpr uint32_t SECONDS_PER_DAY      = 86400U;
 //--------------------------
 // Boost Constant
 //--------------------------
-#define CIRCULAR_BUFFER                 10
+constexpr size_t CIRCULAR_BUFFER        = 10UL;
 //--------------------------
 // Interval Constant
 //--------------------------
-#define UPDATE_INTERVAL                 5
+constexpr uint8_t UPDATE_INTERVAL       = 5U;
 //--------------------------
 // Bar Constant
 //--------------------------
-#define BAR_PERCENTAGE                  0.15
-#define DEFAULT_WIDTH                   30
-#define MIN_WIDTH                       10
-constexpr size_t MIN_BAR_LENGTH =       15;       // Minimum length of the progress bar for visibility.
+constexpr float BAR_PERCENTAGE          = 0.15f;
+constexpr size_t DEFAULT_WIDTH          = 30UL;
+#ifdef HAVE_FMT
+    constexpr size_t MIN_WIDTH          = 10UL;
+#endif
+constexpr size_t MIN_BAR_LENGTH         = 15UL;       // Minimum length of the progress bar for visibility.
 //--------------------------------------------------------------
-size_t ProgressBar::ProgressBar::m_available_width = 0;
-size_t ProgressBar::ProgressBar::m_name_length = 0;
-size_t ProgressBar::ProgressBar::m_spaces_after_bar = 0;
-size_t ProgressBar::ProgressBar::m_bar_length = 0;
+size_t ProgressBar::ProgressBar::m_available_width  = 0UL;
+size_t ProgressBar::ProgressBar::m_name_length      = 0UL;
+size_t ProgressBar::ProgressBar::m_spaces_after_bar = 0UL;
+size_t ProgressBar::ProgressBar::m_bar_length       = 0UL;
 //--------------------------------------------------------------
 ProgressBar::ProgressBar::ProgressBar(  const std::string& name, 
                                         const std::string& progress_char, 
                                         const std::string& empty_space_char) :  m_total(std::numeric_limits<size_t>::max()),
-                                                                                m_progress(0),
+                                                                                m_progress(0UL),
                                                                                 m_name(name),
                                                                                 m_progress_char(progress_char),
                                                                                 m_empty_space_char(empty_space_char),
@@ -112,7 +116,7 @@ ProgressBar::ProgressBar::ProgressBar(  const size_t& total,
                                         const std::string& name, 
                                         const std::string& progress_char, 
                                         const std::string& empty_space_char) :  m_total(total),
-                                                                                m_progress(0),
+                                                                                m_progress(0UL),
                                                                                 m_name(name), 
                                                                                 m_progress_char(progress_char), 
                                                                                 m_empty_space_char(empty_space_char),
@@ -140,30 +144,34 @@ void ProgressBar::ProgressBar::initializer(const std::string& name) const{
     //--------------------------
     calculate_bar();
     //--------------------------
+#ifdef _WIN32
+    SetConsoleCtrlHandler(&ProgressBar::ProgressBar::handle_console_signal, TRUE);
+#else
     std::signal(SIGWINCH, handle_winch_signal);
+#endif
     //--------------------------
 }// end void ProgressBar::ProgressBar::initializer(const std::string& name) const
 //--------------------------------------------------------------
 std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
     //--------------------------
-    if (m_progress == 0 or m_total == 0) {
+    if (!m_progress or !m_total) {
         return std::chrono::milliseconds::max().count();  // Indicate that ETC is not applicable
     }// end if (m_progress <= 0 or m_total <= 0)
     //--------------------------
 #ifdef USE_BOOST
     static boost::circular_buffer<std::chrono::milliseconds::rep> m_delta_times(m_total > 2*CIRCULAR_BUFFER ? CIRCULAR_BUFFER : static_cast<size_t>(m_total/2));
 #else
-    static CircularBuffer<std::chrono::milliseconds::rep> m_delta_times( m_total > 2*CIRCULAR_BUFFER ? CIRCULAR_BUFFER : static_cast<size_t>(m_total/2));
+    static CircularBuffer::CircularBuffer<std::chrono::milliseconds::rep> m_delta_times( m_total > 2*CIRCULAR_BUFFER ? CIRCULAR_BUFFER : static_cast<size_t>(m_total/2));
 #endif
     //--------------------------
     static auto m_last_etc = std::numeric_limits<double>::max();
     //--------------------------
-    static uint8_t m_update_counter = 0;
+    static uint8_t m_update_counter = 0U;
     //--------------------------
-    static std::chrono::steady_clock::time_point m_last_tick_time = std::chrono::steady_clock::now();
+    static auto m_last_tick_time = m_start_time;
     //--------------------------
     auto now = std::chrono::steady_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_start_time).count();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_start_time).count();
     //--------------------------
     // Calculating overall ETA based on the overall progress and time
     //--------------------------
@@ -197,30 +205,32 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
     #endif
 #else
         m_delta_times.push(std::move(elapsed_since_last));
-        auto recent_avg_time = m_delta_times.mean().value();
+        const double recent_avg_time = m_delta_times.mean().value_or(0.);
 #endif
         //--------------------------
         // Use the recent average to estimate current ETC
         //--------------------------
-        auto recent_etc = recent_avg_time * (m_total - m_progress) / m_progress;
+        const double recent_etc     = recent_avg_time * (static_cast<double>(m_total) - static_cast<double>(m_progress)) / static_cast<double>(m_progress);
         //--------------------------
         // Average of overall and recent ETC
         //--------------------------
-        auto combined_etc = (overall_etc + recent_etc) / 2; // Averaging ETCs
+        const double combined_etc   = (static_cast<double>(overall_etc) + recent_etc) / 2.; // Averaging ETCs
         //--------------------------
-        m_last_tick_time = now; // Update the last tick time
-        m_last_etc = combined_etc; // Store the calculated ETC
-        m_update_counter = 0; // Reset the counter after updating
+        m_last_tick_time    = now;          // Update the last tick time
+        m_last_etc          = combined_etc; // Store the calculated ETC
+        m_update_counter    = 0U;            // Reset the counter after updating
         //--------------------------
         return combined_etc; // Return combined ETC in milliseconds
+        //--------------------------
     }// end if (++m_update_counter % UPDATE_INTERVAL == 0)
     //--------------------------
     // If not the time to update, return the last calculated ETC
+    //--------------------------
     return m_last_etc; // ETC in milliseconds
     //--------------------------
 }// end double ProgressBar::ProgressBar::calculate_etc(void) 
 //--------------------------------------------------------------
-std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void) {
+inline std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void) const{
     //--------------------------
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_start_time).count();
     //--------------------------
@@ -228,7 +238,7 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void)
 //--------------------------------------------------------------
 #ifndef HAVE_FMT
     //--------------------------
-    void ProgressBar::ProgressBar::append_time(std::stringstream& ss, const std::chrono::milliseconds::rep& time, const std::string& label) {
+    void ProgressBar::ProgressBar::append_time(std::ostringstream& ss, const std::chrono::milliseconds::rep& time, const std::string& label) {
         //--------------------------
         // Convert total milliseconds to chrono::milliseconds type
         //--------------------------
@@ -309,40 +319,56 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void)
     //--------------------------
     void ProgressBar::ProgressBar::display(void) {
         //--------------------------
-        size_t position = 0, percent = 0;
+        static std::string  completed_bar,
+                            incomplete_bar,
+                            green_part,
+                            red_part, 
+                            colored_bar,
+                            formatted_bar,
+                            formatted_time;
         //--------------------------
-        if (m_total != 0 and m_total != std::numeric_limits<size_t>::max()) {
-            m_progress = std::clamp(m_progress, static_cast<size_t>(0), m_total);
-            auto ratio = m_total > 0 ? static_cast<double>(m_progress) / m_total : 0;
-            percent = static_cast<size_t>(ratio * 100);
+        // Reserve memory for static strings
+        //--------------------------
+        completed_bar.reserve(m_bar_length);
+        incomplete_bar.reserve(m_bar_length);
+        green_part.reserve(m_bar_length);
+        red_part.reserve(m_bar_length);
+        colored_bar.reserve(m_bar_length * 2UL + 1UL);      // To account for the combined bar and the "]"
+        formatted_bar.reserve(m_bar_length * 2UL + 50UL);   // Adjust size based on expected length
+        formatted_time.reserve(100UL);                      // Adjust size based on expected length
+        //--------------------------
+        size_t position = 0UL, percent = 0UL;
+        //--------------------------
+        if (m_total != 0UL && m_total != std::numeric_limits<size_t>::max()) {
+            m_progress = std::clamp(m_progress, static_cast<size_t>(0UL), m_total);
+            const double ratio = m_total > 0UL ? static_cast<double>(m_progress) / static_cast<double>(m_total) : 0.;
+            percent = static_cast<size_t>(ratio * 100UL);
             position = static_cast<size_t>(m_bar_length * ratio);
         } else {
             position = m_progress % m_bar_length;
-        }// end if (m_total != 0 and m_total != std::numeric_limits<size_t>::max())
+        }// end if (m_total != 0UL && m_total != std::numeric_limits<size_t>::max())
         //--------------------------
-        std::string completed_bar(position, m_progress_char[0]); // Constructs a string of 'position' count of progress chars.
-        std::string incomplete_bar(m_bar_length - position, m_empty_space_char[0]); // Remaining part.
+        // Reuse static variables for string construction
         //--------------------------
-        std::string elapsed_time = append_time(calculate_elapsed(), "Elapsed:");
-        std::string etc_time = (m_total != 0 and m_total != std::numeric_limits<size_t>::max()) ? append_time(calculate_etc(), "ETC:") : "ETC: N/A ";
+        completed_bar.assign(position, m_progress_char[0]);
+        incomplete_bar.assign(m_bar_length - position, m_empty_space_char[0]);
         //--------------------------
-        // Format the progress bar with colors.
-        std::string green_part = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{}", completed_bar);
-        std::string red_part = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::red), "{}", incomplete_bar);
+        const std::string elapsed_time = append_time(calculate_elapsed(), "Elapsed:");
+        const std::string etc_time = (m_total != 0UL && m_total != std::numeric_limits<size_t>::max()) ? append_time(calculate_etc(), "ETC:") : "ETC: N/A ";
         //--------------------------
-        std::string colored_bar;
-        colored_bar.reserve(green_part.size() + red_part.size() + 1);  // +1 for the "]" character
+        // Use fmt library to format with colors
+        green_part = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::green), "{}", completed_bar);
+        red_part = fmt::format(fmt::emphasis::bold | fmt::fg(fmt::color::red), "{}", incomplete_bar);
+        //--------------------------
         colored_bar = green_part + red_part + "]";
         //--------------------------
-        std::string formatted_bar = fmt::format("\r{}: {:3d}% [{}{} ", m_name, percent, colored_bar, std::string(m_spaces_after_bar, ' '));
+        formatted_bar = fmt::format("\r{}: {:3d}% [{}{} ", m_name, percent, colored_bar, std::string(m_spaces_after_bar, ' '));
         //--------------------------
         if (m_available_width < MIN_WIDTH) {
             formatted_bar = fmt::format("\r{:3d}% [{}]", percent, completed_bar + incomplete_bar);
         }// end if (m_available_width < MIN_WIDTH)
         //--------------------------
-        std::string formatted_time = fmt::format("{} {}", elapsed_time, etc_time);
-        //--------------------------
-        // Use bold emphasis for printing.
+        formatted_time = fmt::format("{} {}", elapsed_time, etc_time);
         //--------------------------
         std::cout << fmt::format(fmt::emphasis::bold, "\x1b[A{} \n{}", formatted_bar, formatted_time);
         std::cout.flush();
@@ -353,19 +379,19 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void)
 //--------------------------
     void ProgressBar::ProgressBar::display(void) {
         //--------------------------
-        std::stringstream ss;
-        ss.str().reserve(200);
-        size_t position = 0;
+        std::ostringstream ss;
+        ss.str().reserve(200UL);  // Reserve memory to avoid dynamic allocation during the process
+        size_t position = 0UL;
         //--------------------------
         ss << '\r';
         //--------------------------
-        if(m_total != 0 and m_total != std::numeric_limits<size_t>::max()) {
+        if(m_total != 0UL and m_total != std::numeric_limits<size_t>::max()) {
             //--------------------------
-            m_progress = std::clamp(m_progress, static_cast<size_t>(0), m_total);
+            m_progress = std::clamp(m_progress, static_cast<size_t>(0UL), m_total);
             //--------------------------
-            double ratio = m_total > 0 ? static_cast<double>(m_progress) / m_total : 0;
-            auto percent = static_cast<size_t>(ratio * 100);
-            position = m_bar_length * ratio;
+            const double ratio      = m_total > 0UL ? static_cast<double>(m_progress) / static_cast<double>(m_total) : 0.;
+            const size_t percent    = static_cast<size_t>(ratio * 100UL);
+            position                = m_bar_length * ratio;
             //--------------------------
             ss << m_name << ": " << std::setw(3) << percent << "% [" << ANSI_BOLD_ON;
             //--------------------------
@@ -393,7 +419,7 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapsed(void)
         //--------------------------
         append_time(ss, calculate_elapsed(), "Elapsed:");
         //--------------------------
-        if(m_total != 0 and m_total != std::numeric_limits<size_t>::max()) {
+        if(m_total != 0UL and m_total != std::numeric_limits<size_t>::max()) {
             //--------------------------
             append_time(ss, calculate_etc(), "ETC:");
             //--------------------------
@@ -419,13 +445,32 @@ void ProgressBar::ProgressBar::tick(void) {
     //--------------------------
 }// end void ProgressBar::ProgressBar::tick(void)
 //--------------------------------------------------------------
-bool ProgressBar::ProgressBar::is_done(void) const{
+inline bool ProgressBar::ProgressBar::is_done(void) const{
     //--------------------------
     return m_progress >= m_total;
     //--------------------------
 }// end bool ProgressBar::ProgressBar::is_done(void)
 //--------------------------------------------------------------
-size_t ProgressBar::ProgressBar::get_terminal_width(void) {
+inline size_t ProgressBar::ProgressBar::get_terminal_width(void) {
+#ifdef _WIN32
+    //--------------------------
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    //--------------------------
+    int columns;
+    //--------------------------
+    if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+        //--------------------------
+        columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+        //--------------------------
+    } else {
+        //--------------------------
+        columns = DEFAULT_WIDTH; // Default width if unable to get console size
+        //--------------------------
+    }// end if (GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi))
+    //--------------------------
+    return columns;
+    //--------------------------
+#else
     //--------------------------
     struct winsize size;
     //--------------------------
@@ -438,6 +483,7 @@ size_t ProgressBar::ProgressBar::get_terminal_width(void) {
     //--------------------------
     return size.ws_col;
     //--------------------------
+#endif
 }// end void ProgressBar::ProgressBar::print_terminal_width(void)
 //--------------------------------------------------------------
 void ProgressBar::ProgressBar::calculate_bar(void) {
@@ -446,17 +492,17 @@ void ProgressBar::ProgressBar::calculate_bar(void) {
     //--------------------------
     // Constants for fixed characters and escape sequences.
     //--------------------------
-    constexpr size_t fixed_characters = 10;  // "100% []" and any padding.
-    constexpr size_t ansi_sequences = 14;    // "\033[1m", "\033[32m", etc.
+    static constexpr size_t fixed_characters   = 10UL;  // "100% []" and any padding.
+    static constexpr size_t ansi_sequences     = 14UL;    // "\033[1m", "\033[32m", etc.
     //--------------------------
-    size_t fixed_and_name_characters = m_name_length + fixed_characters;
-    m_available_width = terminal_width - fixed_and_name_characters - ansi_sequences;
+    const size_t fixed_and_name_characters  = m_name_length + fixed_characters;
+    m_available_width                       = terminal_width - fixed_and_name_characters - ansi_sequences;
     //--------------------------
     // Calculate the length of the bar based on BAR_PERCENTAGE.
     //--------------------------
     m_bar_length = static_cast<size_t>(m_available_width * BAR_PERCENTAGE);
     m_bar_length = std::max(m_bar_length, MIN_BAR_LENGTH);
-    m_bar_length = (m_bar_length % 2 == 0) ? m_bar_length : m_bar_length - 1;
+    m_bar_length = (m_bar_length % 2UL == 0UL) ? m_bar_length : m_bar_length - 1UL;
     //--------------------------
     #ifdef HAVE_FMT
         //--------------------------
@@ -466,7 +512,7 @@ void ProgressBar::ProgressBar::calculate_bar(void) {
     //--------------------------
 }// end void ProgressBar::ProgressBar::calculate_bar(void)
 //--------------------------------------------------------------
-void ProgressBar::ProgressBar::clear_lines(bool line){
+inline void ProgressBar::ProgressBar::clear_lines(bool line){
     //--------------------------
     if(line){
 #ifdef HAVE_FMT
@@ -485,17 +531,37 @@ void ProgressBar::ProgressBar::clear_lines(bool line){
     //--------------------------
 }// end void ProgressBar::ProgressBar::clear_lines(void)
 //--------------------------------------------------------------
-void ProgressBar::ProgressBar::handle_winch_signal(int signum) {
+#ifdef _WIN32
     //--------------------------
-    if (signum == SIGWINCH) {
+    BOOL WINAPI ProgressBar::ProgressBar::handle_console_signal(DWORD event) {
         //--------------------------
-        clear_lines();
+        if (event == CTRL_C_EVENT or event == CTRL_BREAK_EVENT or event == CTRL_CLOSE_EVENT or event == CTRL_LOGOFF_EVENT or event == CTRL_SHUTDOWN_EVENT) {
+            //--------------------------
+            clear_lines();
+            //--------------------------
+            calculate_bar();
+            //--------------------------
+            clear_lines(true);
+            //--------------------------
+        }//end if (event == CTRL_WINDOW_EVENT)
         //--------------------------
-        calculate_bar();
-        //--------------------------
-        clear_lines(true);
-        //--------------------------
-    }//end if (signum == SIGWINCH)
+        return TRUE;
+    }// end BOOL WINAPI ProgressBar::ProgressBar::handle_console_signal(DWORD event)
     //--------------------------
-}// end void ProgressBar::ProgressBar::handle_winch_signal(int signum)
+#else
+    //--------------------------   
+    void ProgressBar::ProgressBar::handle_winch_signal(int signum) {
+        //--------------------------
+        if (signum == SIGWINCH) {
+            //--------------------------
+            clear_lines();
+            //--------------------------
+            calculate_bar();
+            //--------------------------
+            clear_lines(true);
+            //--------------------------
+        }//end if (signum == SIGWINCH)
+        //--------------------------
+    }// end void ProgressBar::ProgressBar::handle_winch_signal(int signum)
+#endif
 //--------------------------------------------------------------
