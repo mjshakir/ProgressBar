@@ -8,29 +8,29 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x86]
-        include:
-          - config: "default"
+        config:
+          - name: "default"
             install: "brew install cmake tbb fmt boost ninja"
             cmake_opts: ""
-          - config: "no_fmt"
+          - name: "no_fmt"
             install: "brew install cmake tbb boost ninja"
             cmake_opts: "-DWITH_FMT=OFF"
-          - config: "no_tbb"
+          - name: "no_tbb"
             install: "brew install cmake fmt boost ninja"
             cmake_opts: "-DWITH_TBB=OFF"
-          - config: "no_boost"
+          - name: "no_boost"
             install: "brew install cmake tbb fmt ninja"
             cmake_opts: "-DWITH_BOOST=OFF"
-          - config: "no_fmt_no_tbb"
+          - name: "no_fmt_no_tbb"
             install: "brew install cmake boost ninja"
             cmake_opts: "-DWITH_FMT=OFF -DWITH_TBB=OFF"
-          - config: "no_fmt_no_boost"
+          - name: "no_fmt_no_boost"
             install: "brew install cmake tbb ninja"
             cmake_opts: "-DWITH_FMT=OFF -DWITH_BOOST=OFF"
-          - config: "no_tbb_no_boost"
+          - name: "no_tbb_no_boost"
             install: "brew install cmake fmt ninja"
             cmake_opts: "-DWITH_TBB=OFF -DWITH_BOOST=OFF"
-          - config: "no_fmt_no_tbb_no_boost"
+          - name: "no_fmt_no_tbb_no_boost"
             install: "brew install cmake ninja"
             cmake_opts: "-DWITH_FMT=OFF -DWITH_TBB=OFF -DWITH_BOOST=OFF"
 
@@ -60,6 +60,9 @@ jobs:
 
     - name: Check Clang Version
       run: clang++ --version
+
+    - name: Print Configuration
+      run: 'echo "Running configuration: ${{ matrix.config.name }}"'
 
     - name: Create build directory
       run: mkdir build
