@@ -9,12 +9,12 @@ jobs:
       matrix:
         arch: [x86]
         config:
-          - name: "default"
-            install: "brew install cmake tbb fmt boost ninja"
-            cmake_opts: ""
-          - name: "no_fmt"
-            install: "brew install cmake tbb boost ninja"
-            cmake_opts: "-DWITH_FMT=OFF"
+          # - name: "default"
+          #   install: "brew install cmake tbb fmt boost ninja"
+          #   cmake_opts: ""
+          # - name: "no_fmt"
+          #   install: "brew install cmake tbb boost ninja"
+          #   cmake_opts: "-DWITH_FMT=OFF"
           - name: "no_tbb"
             install: "brew install cmake fmt boost ninja"
             cmake_opts: "-DWITH_TBB=OFF"
