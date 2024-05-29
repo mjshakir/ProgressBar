@@ -122,7 +122,7 @@ jobs:
       if: steps.check_msvc.outputs.skip_step != 'true'
       run: |
         echo "CMAKE_TOOLCHAIN_FILE is: $Env:CMAKE_TOOLCHAIN_FILE"
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=%CMAKE_TOOLCHAIN_FILE% ${{ matrix.config.cmake_opts }}
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ${{ matrix.config.cmake_opts }}
 
     - name: List build directory contents
       run: Get-ChildItem -Recurse build/
