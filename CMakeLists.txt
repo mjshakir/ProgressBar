@@ -49,13 +49,6 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic -pedantic-errors -Werror=format-security -fasynchronous-unwind-tables)
 endif()
 
-# Add external submodule projects
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external_libraries/CircularBuffer)
-    add_subdirectory(external_libraries/CircularBuffer)
-else()
-    message(FATAL_ERROR "external_libraries/CircularBuffer directory not found")
-endif()
-
 # Create the library
 set(SOURCES src/ProgressBar.cpp)
 
@@ -109,13 +102,22 @@ if(WITH_BOOST)
             message(FATAL_ERROR "external_libraries/CircularBuffer directory not found")
         endif()
     endif()
+else()
+    # Add external submodule projects
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external_libraries/CircularBuffer)
+        add_subdirectory(external_libraries/CircularBuffer)
+    else()
+        message(FATAL_ERROR "external_libraries/CircularBuffer directory not found")
+    endif()
 endif()
 
-# Link CircularBuffer
-if(TARGET CircularBuffer::CircularBuffer)
-    target_link_libraries(${PROJECT_NAME} PRIVATE CircularBuffer::CircularBuffer)
-else()
-    message(FATAL_ERROR "CircularBuffer target not found")
+# Link CircularBuffer if Boost is not used
+if(NOT WITH_BOOST OR NOT Boost_FOUND)
+    if(TARGET CircularBuffer::CircularBuffer)
+        target_link_libraries(${PROJECT_NAME} PRIVATE CircularBuffer::CircularBuffer)
+    else()
+        message(FATAL_ERROR "CircularBuffer target not found")
+    endif()
 endif()
 
 # Specify the public headers for the library
@@ -163,15 +165,26 @@ else()
 endif()
 
 # Installation and export setup
+# Installation and export setup
 if(PROGRESSBAR_STANDALONE_PROJECT)
     include(GNUInstallDirs)
-    install(TARGETS ${PROJECT_NAME} CircularBuffer
+    include(CMakePackageConfigHelpers)
+    install(TARGETS ${PROJECT_NAME}
         EXPORT ${PROJECT_NAME}Targets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}
     )
+
+    if(NOT WITH_BOOST OR NOT Boost_FOUND)
+        install(TARGETS CircularBuffer
+            EXPORT ${PROJECT_NAME}Targets
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+    endif()
 
     # Exporting and versioning
     install(EXPORT ${PROJECT_NAME}Targets
