@@ -102,6 +102,12 @@ if(WITH_BOOST)
         target_compile_definitions(${PROJECT_NAME} PRIVATE USE_BOOST)
     else()
         message(STATUS "Boost not found or disabled")
+        # Add external submodule projects
+        if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external_libraries/CircularBuffer)
+            add_subdirectory(external_libraries/CircularBuffer)
+        else()
+            message(FATAL_ERROR "external_libraries/CircularBuffer directory not found")
+        endif()
     endif()
 endif()
 
