@@ -113,8 +113,8 @@ endif()
 
 # Link CircularBuffer if Boost is not used
 if(NOT WITH_BOOST OR NOT Boost_FOUND)
-    if(TARGET CircularBuffer::CircularBuffer)
-        target_link_libraries(${PROJECT_NAME} PRIVATE CircularBuffer::CircularBuffer)
+    if(TARGET ${CIRCULARBUFFER_LIBRARIES})
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${CIRCULARBUFFER_LIBRARIES})
     else()
         message(FATAL_ERROR "CircularBuffer target not found")
     endif()
