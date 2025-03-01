@@ -3,7 +3,9 @@
 //--------------------------------------------------------------
 // Standard cpp library
 //--------------------------------------------------------------
-#include <iostream>
+#include <cstddef>
+#include <cstdbool>
+#include <string>
 #include <chrono>
 //--------------------------------------------------------------
 // Windows library
@@ -57,9 +59,9 @@ namespace ProgressBar {
              * // Downloading [=========================]
              * @endcode
              */
-            explicit ProgressBar(   const std::string& name = "Progress", 
-                                    const std::string& progress_char = "#", 
-                                    const std::string& empty_space_char = "-");
+            explicit ProgressBar(   std::string_view name = "Progress", 
+                                    std::string_view progress_char = "#", 
+                                    std::string_view empty_space_char = "-");
             //--------------------------
             /**
              * @brief Construct a new ProgressBar with a total count, name, progress character, and empty space character.
@@ -84,9 +86,9 @@ namespace ProgressBar {
              * @endcode
              */
             explicit ProgressBar(   const size_t& total,
-                                    const std::string& name = "Progress", 
-                                    const std::string& progress_char = "#", 
-                                    const std::string& empty_space_char = "-");
+                                    std::string_view name = "Progress", 
+                                    std::string_view progress_char = "#", 
+                                    std::string_view empty_space_char = "-");
             //--------------------------
             ProgressBar           (ProgressBar const&) = default;
             ProgressBar& operator=(ProgressBar const&) = delete;
@@ -158,17 +160,17 @@ namespace ProgressBar {
             //--------------------------------------------------------------
         protected:
             //--------------------------------------------------------------
-            void initializer(const std::string& name) const;
+            void initializer(std::string_view name) const;
             //--------------------------
             #ifndef HAVE_FMT
                 //--------------------------
-                void append_time(std::ostringstream& ss, const std::chrono::milliseconds::rep& time, const std::string& label);
+                void append_time(std::ostringstream& ss, const std::chrono::milliseconds::rep& time, std::string_view label);
                 //--------------------------
             #endif
             //--------------------------
             #ifdef HAVE_FMT
                 //--------------------------
-                std::string append_time(const std::chrono::milliseconds::rep& time, const std::string& label);
+                std::string append_time(const std::chrono::milliseconds::rep& time, std::string_view label);
                 //--------------------------
             #endif
             //--------------------------
