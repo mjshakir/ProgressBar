@@ -1,6 +1,7 @@
 #include "ProgressBar.hpp" // Include the ProgressBar header
 #include <thread>  // Used for simulating work (sleep)
 #include <chrono>  // Used for timing and sleeping
+#include <iostream> // Used for console output
 
 int main(void) {
     // Start timing the execution with progress bar
