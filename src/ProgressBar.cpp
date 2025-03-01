@@ -5,7 +5,8 @@
 //--------------------------------------------------------------
 // Standard cpp library
 //--------------------------------------------------------------
-#include <string>
+#include <iostream>
+#include <string_view>
 #include <sstream>
 #include <iomanip>
 #include <climits>
@@ -99,9 +100,9 @@ size_t ProgressBar::ProgressBar::m_name_length      = 0UL;
 size_t ProgressBar::ProgressBar::m_spaces_after_bar = 0UL;
 size_t ProgressBar::ProgressBar::m_bar_length       = 0UL;
 //--------------------------------------------------------------
-ProgressBar::ProgressBar::ProgressBar(  const std::string& name, 
-                                        const std::string& progress_char, 
-                                        const std::string& empty_space_char) :  m_total(std::numeric_limits<size_t>::max()),
+ProgressBar::ProgressBar::ProgressBar(  std::string_view name, 
+                                        std::string_view progress_char, 
+                                        std::string_view empty_space_char) :  m_total(std::numeric_limits<size_t>::max()),
                                                                                 m_progress(0UL),
                                                                                 m_name(name),
                                                                                 m_progress_char(progress_char),
@@ -113,9 +114,9 @@ ProgressBar::ProgressBar::ProgressBar(  const std::string& name,
 }//end ProgressBar::ProgressBar::ProgressBar
 //--------------------------------------------------------------
 ProgressBar::ProgressBar::ProgressBar(  const size_t& total,
-                                        const std::string& name, 
-                                        const std::string& progress_char, 
-                                        const std::string& empty_space_char) :  m_total(total),
+                                        std::string_view name, 
+                                        std::string_view progress_char, 
+                                        std::string_view empty_space_char) :  m_total(total),
                                                                                 m_progress(0UL),
                                                                                 m_name(name), 
                                                                                 m_progress_char(progress_char), 
@@ -138,7 +139,7 @@ bool ProgressBar::ProgressBar::done(void){
     //--------------------------
 }// end bool ProgressBar::ProgressBar::done(void)
 //--------------------------------------------------------------
-void ProgressBar::ProgressBar::initializer(const std::string& name) const{
+void ProgressBar::ProgressBar::initializer(std::string_view name) const{
     //--------------------------
     m_name_length = name.length();
     //--------------------------
@@ -150,7 +151,7 @@ void ProgressBar::ProgressBar::initializer(const std::string& name) const{
     std::signal(SIGWINCH, handle_winch_signal);
 #endif
     //--------------------------
-}// end void ProgressBar::ProgressBar::initializer(const std::string& name) const
+}// end void ProgressBar::ProgressBar::initializer(std::string_view name) const
 //--------------------------------------------------------------
 std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
     //--------------------------
@@ -214,7 +215,7 @@ std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_etc(void) {
         //--------------------------
         // Average of overall and recent ETC
         //--------------------------
-        const double combined_etc   = (static_cast<double>(overall_etc) + recent_etc) / 2.; // Averaging ETCs
+        const double combined_etc   = (static_cast<double>(overall_etc) + recent_etc) * 0.5; // Averaging ETCs
         //--------------------------
         m_last_tick_time    = now;          // Update the last tick time
         m_last_etc          = combined_etc; // Store the calculated ETC
@@ -238,7 +239,7 @@ inline std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapse
 //--------------------------------------------------------------
 #ifndef HAVE_FMT
     //--------------------------
-    void ProgressBar::ProgressBar::append_time(std::ostringstream& ss, const std::chrono::milliseconds::rep& time, const std::string& label) {
+    void ProgressBar::ProgressBar::append_time(std::ostringstream& ss, const std::chrono::milliseconds::rep& time, std::string_view label) {
         //--------------------------
         // Convert total milliseconds to chrono::milliseconds type
         //--------------------------
@@ -277,13 +278,13 @@ inline std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapse
             ss << ":" << std::setw(3) << std::setfill('0') << milliseconds_duration.count() << " ";
         }// end if (milliseconds_duration.count() > 0)
         //--------------------------
-    }// end void ProgressBar::ProgressBar::append_time(std::stringstream& ss, double time, const std::string& label)
+    }// end void ProgressBar::ProgressBar::append_time(std::stringstream& ss, double time, std::string_view label)
     //--------------------------
 #endif
 //--------------------------------------------------------------
 #ifdef HAVE_FMT
     //--------------------------
-    std::string ProgressBar::ProgressBar::append_time(const std::chrono::milliseconds::rep& time, const std::string& label) {
+    std::string ProgressBar::ProgressBar::append_time(const std::chrono::milliseconds::rep& time, std::string_view label) {
         //--------------------------
         // Convert total milliseconds to chrono::milliseconds type
         //--------------------------
@@ -311,7 +312,7 @@ inline std::chrono::milliseconds::rep ProgressBar::ProgressBar::calculate_elapse
                         seconds_duration.count(), 
                         milliseconds_duration.count());
         //--------------------------
-    }// end std::string ProgressBar::ProgressBar::append_time(double time, const std::string& label)
+    }// end std::string ProgressBar::ProgressBar::append_time(double time, std::string_view label)
     //--------------------------
 #endif
 //--------------------------------------------------------------
