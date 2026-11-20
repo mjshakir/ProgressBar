@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
 # Determine if ProgressBar is built as a standalone project or included by other projects
 set(PROGRESSBAR_STANDALONE_PROJECT OFF)
@@ -88,7 +88,7 @@ if(WITH_TBB)
 endif()
 
 if(WITH_BOOST)
-    find_package(Boost QUIET)
+    find_package(Boost QUIET CONFIG)
     if(Boost_FOUND)
         target_link_libraries(${PROJECT_NAME} PUBLIC ${Boost_LIBRARIES})
         target_include_directories(${PROJECT_NAME} PUBLIC ${Boost_INCLUDE_DIRS})

@@ -497,7 +497,8 @@ void ProgressBar::ProgressBar::calculate_bar(void) {
     static constexpr size_t ansi_sequences     = 14UL;    // "\033[1m", "\033[32m", etc.
     //--------------------------
     const size_t fixed_and_name_characters  = m_name_length + fixed_characters;
-    m_available_width                       = terminal_width - fixed_and_name_characters - ansi_sequences;
+    const size_t reserved_width              = fixed_and_name_characters + ansi_sequences;
+    m_available_width                       = (terminal_width > reserved_width) ? (terminal_width - reserved_width) : 0UL;
     //--------------------------
     // Calculate the length of the bar based on BAR_PERCENTAGE.
     //--------------------------
@@ -507,7 +508,7 @@ void ProgressBar::ProgressBar::calculate_bar(void) {
     //--------------------------
     #ifdef HAVE_FMT
         //--------------------------
-        m_spaces_after_bar = m_available_width - m_bar_length;  // Spaces to provide visual separation.
+        m_spaces_after_bar = (m_available_width > m_bar_length) ? (m_available_width - m_bar_length) : 0UL;  // Spaces to provide visual separation.
         //--------------------------
     #endif
     //--------------------------
