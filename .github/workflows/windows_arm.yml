@@ -2,6 +2,15 @@ name: Windows ARM
 
 on: [push, pull_request]
 
+# Least privilege: the jobs only read the repository.
+permissions:
+  contents: read
+
+# A newer push to the same branch or pull request cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     strategy:
@@ -50,11 +59,11 @@ jobs:
               fmt:arm64-windows
             cmake_opts: "-DWITH_BOOST=OFF -DWITH_TBB=OFF"
 
-    runs-on: windows-latest
+    runs-on: windows-11-arm
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v7
       with:
         submodules: true
 
@@ -69,8 +78,10 @@ jobs:
         echo "CMAKE_TOOLCHAIN_FILE=$(pwd)\vcpkg\scripts\buildsystems\vcpkg.cmake" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Install Dependencies
+      env:
+        DEPENDENCIES: ${{ matrix.config.dependencies }}
       run: |
-        $dependencies = @(${matrix.config.dependencies})
+        $dependencies = $env:DEPENDENCIES -split '\s+' | Where-Object { $_ }
         foreach ($dep in $dependencies) {
           .\vcpkg\vcpkg.exe install $dep
         }
@@ -81,11 +92,15 @@ jobs:
         .\vcpkg\vcpkg.exe update
         .\vcpkg\vcpkg.exe upgrade --no-dry-run
 
-    - name: Setup CMake and Ninja
-      uses: lukka/get-cmake@v3.21.1
+    # CMake and Ninja are preinstalled on every hosted image (the runner-images
+    # READMEs); lukka/get-cmake is not needed and its old cache client fails.
+    - name: Show CMake version
+      run: cmake --version
 
     - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: arm64
 
     - name: Check MSVC Version
       run: |
@@ -103,7 +118,7 @@ jobs:
               }
           } else {
               Write-Output "MSVC version could not be determined. Skipping version check."
-              echo "::set-output name=skip_step::true"
+              echo "skip_step=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           }
         } catch {
           throw $_
@@ -122,10 +137,10 @@ jobs:
       if: steps.check_msvc.outputs.skip_step != 'true'
       run: |
         echo "CMAKE_TOOLCHAIN_FILE is: $Env:CMAKE_TOOLCHAIN_FILE"
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake ${{ matrix.config.cmake_opts }}
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$env:GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" ${{ matrix.config.cmake_opts }}
 
     - name: List build directory contents
-      run: Get-ChildItem -Recurse build/
+      run: if (Test-Path build) { Get-ChildItem -Recurse build } else { Write-Output 'build does not exist' }
 
     - name: Build
       run: cmake --build build --config Release --verbose
