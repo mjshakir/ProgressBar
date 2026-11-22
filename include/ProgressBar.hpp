@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdbool>
 #include <string>
+#include <string_view>
 #include <chrono>
 //--------------------------------------------------------------
 // Windows library
@@ -160,19 +161,22 @@ namespace ProgressBar {
             //--------------------------------------------------------------
         protected:
             //--------------------------------------------------------------
+            struct TimeParts {
+                std::chrono::milliseconds::rep days, hours, minutes, seconds, milliseconds;
+            };// end struct TimeParts
+            //--------------------------
             void initializer(std::string_view name) const;
             //--------------------------
-            #ifndef HAVE_FMT
-                //--------------------------
-                void append_time(std::ostringstream& ss, const std::chrono::milliseconds::rep& time, std::string_view label);
-                //--------------------------
-            #endif
+            TimeParts split_time(const std::chrono::milliseconds::rep& time) const;
             //--------------------------
-            #ifdef HAVE_FMT
-                //--------------------------
-                std::string append_time(const std::chrono::milliseconds::rep& time, std::string_view label);
-                //--------------------------
-            #endif
+            void put_text(std::string_view text);
+            //--------------------------
+            void put_fill(size_t count, std::string_view text);
+            //--------------------------
+            template <typename T>
+            void put_digits(T value, size_t width, std::string_view fill);
+            //--------------------------
+            void put_time(const std::chrono::milliseconds::rep& time, std::string_view label);
             //--------------------------
             void display(void);
             //--------------------------
@@ -180,9 +184,9 @@ namespace ProgressBar {
             //--------------------------
             inline bool is_done(void) const ;
             //--------------------------
-            std::chrono::milliseconds::rep calculate_etc(void);
+            std::chrono::milliseconds::rep calculate_etc(const std::chrono::steady_clock::time_point& now);
             //--------------------------
-            inline std::chrono::milliseconds::rep calculate_elapsed(void) const;
+            inline std::chrono::milliseconds::rep calculate_elapsed(const std::chrono::steady_clock::time_point& now) const;
             //--------------------------
             static inline size_t get_terminal_width(void);
             //--------------------------
@@ -195,9 +199,12 @@ namespace ProgressBar {
             //--------------------------
             const std::string m_name, m_progress_char, m_empty_space_char;
             //--------------------------
+            std::string m_line;
+            //--------------------------
             const std::chrono::steady_clock::time_point m_start_time;
             //--------------------------
             static size_t m_name_length, m_bar_length, m_available_width, m_spaces_after_bar;
+            //--------------------------
             //--------------------------
             static inline void clear_lines(bool line = false);
             //--------------------------
